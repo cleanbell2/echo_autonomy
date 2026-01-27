@@ -1,3 +1,4 @@
+# sicl/types.py
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -65,4 +66,3 @@ class ActResult:
     state_change_bits: int = 0
     error: Optional[str] = None
     metrics: Dict[str, Any] = field(default_factory=dict)
-
