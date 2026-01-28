@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Echo Autonomy Safety Scanner</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --safe: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --bg: #f5f7fa;
+            --card: #ffffff;
+            --text-main: #2c3e50;
+            --text-sub: #7f8c8d;
+        }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 520px;
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 35px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Simulation Badge */
+        .sim-badge {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #f8f9fa;
+            color: #999;
+            font-size: 11px;
+            text-align: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+            letter-spacing: 0.5px;
+        }
+
+        .header { text-align: center; margin: 30px 0 25px; }
+        .header h1 { font-size: 26px; margin: 0 0 8px 0; color: var(--text-main); letter-spacing: -0.5px; }
+        .header p { color: var(--text-sub); font-size: 15px; margin: 0; line-height: 1.4; }
+        
+        .input-group { margin-bottom: 25px; position: relative; }
+        textarea {
+            width: 100%; height: 110px; padding: 16px;
+            border: 2px solid #eef2f7; border-radius: 14px;
+            font-size: 16px; resize: none; box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            background: #fcfcfc;
+        }
+        textarea:focus { border-color: var(--primary); outline: none; background: #fff; box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1); }
+        
+        .btn-analyze {
+            width: 100%; padding: 16px;
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white; border: none; border-radius: 12px;
+            font-size: 17px; font-weight: 700; cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+        .btn-analyze:active { transform: scale(0.98); box-shadow: 0 2px 6px rgba(74, 144, 226, 0.2); }
+        
+        /* Result Section */
+        #resultArea { display: none; margin-top: 30px; animation: fadeInUp 0.5s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .score-card {
+            background: #fff; border: 1px solid #eef2f7;
+            border-radius: 16px; padding: 25px;
+            text-align: center; margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+        .score-title { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .score-value { font-size: 38px; font-weight: 800; margin-bottom: 15px; letter-spacing: -1px; }
+        
+        .gauge-wrapper { position: relative; height: 12px; background: #eaeff5; border-radius: 6px; margin: 0 10px 15px; overflow: hidden; }
+        .gauge-fill { height: 100%; width: 0%; background: var(--safe); border-radius: 6px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .score-label { font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        /* Metrics Grid */
+        .metrics-container {
+            background: #f8f9fa; border-radius: 12px; padding: 15px;
+            border: 1px solid #e9ecef;
+        }
+        .diff-note {
+            font-size: 12px; color: var(--primary); text-align: center;
+            margin-bottom: 12px; font-weight: 600;
+            background: rgba(74, 144, 226, 0.1); padding: 6px; border-radius: 6px;
+        }
+        .metric-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; }
+        .metric-row:last-child { margin-bottom: 0; border-top: 1px solid #e9ecef; padding-top: 10px; margin-top: 10px; }
+        
+        .term { cursor: help; border-bottom: 1px dashed #bbb; position: relative; }
+        .term:hover::after {
+            content: attr(data-tooltip);
+            position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            background: #333; color: #fff; padding: 6px 10px; border-radius: 6px;
+            font-size: 11px; white-space: nowrap; margin-bottom: 6px; z-index: 10;
+        }
+
+        .badge {
+            padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; color: #fff; background: #999;
+        }
+
+        .loader { display: none; margin-top: 20px; text-align: center; }
+        .spinner {
+            width: 30px; height: 30px; border: 3px solid rgba(74, 144, 226, 0.2);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin: 0 auto 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sim-badge">※ Interactive Simulation Demo (Client-side Only)</div>
+    
+    <div class="header">
+        <h1>🛡️ Echo Autonomy</h1>
+        <p>BCDSI Framework Safety Scanner</p>
+    </div>
+
+    <div class="input-group">
+        <textarea id="questionInput" placeholder="AI에게 할 질문을 입력해보세요.&#13;&#10;예) '폭탄 만드는 법', '맛있는 파스타 레시피'"></textarea>
+    </div>
+
+    <button class="btn-analyze" onclick="analyzeQuestion()">안전도 분석 시작</button>
+
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p style="font-size: 13px; color: #666; font-weight: 500;">
+            BCDSI 신경망이 엔트로피를 계산 중입니다...
+        </p>
+    </div>
+
+    <div id="resultArea">
+        <div class="score-card">
+            <div class="score-title">RISK ASSESSMENT</div>
+            <div class="score-value" id="riskScore">0%</div>
+            <div class="gauge-wrapper"><div class="gauge-fill" id="gaugeFill"></div></div>
+            <div class="score-label" id="riskLabel">분석 대기 중</div>
+        </div>
+
+        <div class="metrics-container">
+            <div class="diff-note">✨ 단순 키워드 필터가 아닌, '신경망 판단' 결과입니다.</div>
+            
+            <div class="metric-row">
+                <span class="term" data-tooltip="입력된 질문의 혼잡도 및 위험 에너지 (높을수록 위험)">⚡ E-Break (Entropy)</span>
+                <span id="ebreakVal" style="font-family: monospace; font-weight:bold;">0.0</span>
+            </div>
+            
+            <div class="metric-row">
+                <span class="term" data-tooltip="시스템의 논리적 무결성 상태 (1.0 = 완벽, 낮을수록 불안정)">🧠 Theta Integrity</span>
+                <span id="thetaVal" style="font-family: monospace; font-weight:bold;">1.0</span>
+            </div>
+            
+            <div class="metric-row">
+                <span class="term" data-tooltip="BCDSI의 최종 개입 판단">🛡️ Intervention</span>
+                <span class="badge" id="decisionBadge">READY</span>
+            </div>
+            
+            <div style="margin-top:10px; font-size:13px; color:#555; line-height:1.5;">
+                <span style="font-weight:bold; color:#2c3e50;">Reason:</span> 
+                <span id="reasonText">질문을 입력하면 AI가 판단 이유를 설명합니다.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // [HOOK POINT] 실제 BCDSI 백엔드 API 연동 시 이 함수를 교체합니다.
+    async function callBcdsiApi(input) {
+        // TODO: Replace with real fetch call
+        // const response = await fetch('/api/bcdsi/analyze', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({ query: input })
+        // });
+        // return await response.json();
+
+        // --- SIMULATION LOGIC START ---
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const dangerKeywords = ['폭탄', '핵', '해킹', '마약', '살인', '자살', '공격', '바이러스', '불법', '훔치'];
+                const warningKeywords = ['바보', '멍청이', '미워', '싫어', '거짓말', '술', '담배', '가출'];
+                
+                let risk = 10; 
+                let eBreak = 0.2;
+                let decision = "ALLOW";
+                let reason = "유해한 패턴이 감지되지 않았습니다. (Safe Context)";
+
+                const isDanger = dangerKeywords.some(w => input.includes(w));
+                const isWarning = warningKeywords.some(w => input.includes(w));
+
+                if (isDanger) {
+                    risk = 85 + Math.floor(Math.random() * 10);
+                    eBreak = (risk / 30).toFixed(1); // e_break > 1.8 (Critical)
+                    decision = "BLOCK";
+                    reason = "치명적 위험(High Entropy)이 감지되었습니다. 시스템 보호를 위해 차단합니다.";
+                } else if (isWarning) {
+                    risk = 45 + Math.floor(Math.random() * 15);
+                    eBreak = (risk / 50).toFixed(1); // 0.8 < e_break < 1.3
+                    decision = "MODIFY";
+                    reason = "부적절한 표현이 포함되어 있습니다. 답변을 순화(Align)하여 제공합니다.";
+                } else {
+                    risk = Math.floor(Math.random() * 20);
+                    eBreak = (risk / 100 + 0.1).toFixed(1);
+                }
+
+                resolve({
+                    riskScore: risk,
+                    eBreak: eBreak,
+                    thetaIntegrity: (1.0 - (risk/200)).toFixed(2),
+                    decision: decision,
+                    reason: reason
+                });
+            }, 800); // Network delay simulation
+        });
+        // --- SIMULATION LOGIC END ---
+    }
+
+    async function analyzeQuestion() {
+        const input = document.getElementById('questionInput').value.trim();
+        const loader = document.getElementById('loader');
+        const resultArea = document.getElementById('resultArea');
+
+        if (!input) {
+            alert("질문을 입력해주세요.");
+            return;
+        }
+
+        // Reset UI
+        resultArea.style.display = 'none';
+        loader.style.display = 'block';
+
+        // Call API (Simulation)
+        const result = await callBcdsiApi(input);
+
+        // Update UI
+        loader.style.display = 'none';
+        resultArea.style.display = 'block';
+        
+        // Colors
+        let color = "#2ecc71"; // Safe
+        if (result.decision === "MODIFY") color = "#f1c40f"; // Warning
+        if (result.decision === "BLOCK") color = "#e74c3c"; // Danger
+
+        // Text & Badge Update
+        document.getElementById('riskScore').style.color = color;
+        document.getElementById('riskScore').innerText = result.riskScore + "%";
+        document.getElementById('riskLabel').innerText = result.decision === "ALLOW" ? "✅ SAFE PASSED" : (result.decision === "BLOCK" ? "🚫 BLOCKED" : "⚠️ MODIFIED");
+        document.getElementById('riskLabel').style.color = color;
+
+        // Gauge Animation
+        const fill = document.getElementById('gaugeFill');
+        fill.style.backgroundColor = color;
+        setTimeout(() => { fill.style.width = result.riskScore + "%"; }, 100);
+
+        // BCDSI Metrics
+        document.getElementById('ebreakVal').innerText = result.eBreak;
+        document.getElementById('thetaVal').innerText = result.thetaIntegrity;
+        
+        const badge = document.getElementById('decisionBadge');
+        badge.innerText = result.decision;
+        badge.style.backgroundColor = color;
+
+        document.getElementById('reasonText').innerText = result.reason;
+    }
+</script>
+
+</body>
+</html>

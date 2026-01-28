@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ AI Safety Scanner</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --safe: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --bg: #f5f7fa;
+            --card: #ffffff;
+        }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            padding: 30px;
+            height: fit-content;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 24px;
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        .header p {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin: 0;
+        }
+        .input-group {
+            margin-bottom: 25px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 15px;
+            border: 2px solid #eef2f7;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: none;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        .btn-analyze {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+        .btn-analyze:active {
+            transform: scale(0.98);
+        }
+        
+        /* Result Section */
+        #resultArea {
+            display: none;
+            margin-top: 30px;
+            border-top: 2px solid #f0f0f0;
+            padding-top: 25px;
+            animation: slideDown 0.4s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .score-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .score-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .score-value {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+        .score-label {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        /* Gauge Bar */
+        .gauge-bg {
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .gauge-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--safe);
+            border-radius: 6px;
+            transition: width 1s ease-out, background-color 0.5s;
+        }
+
+        .metrics {
+            font-size: 13px;
+            color: #555;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            text-align: left;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .metric-row:last-child { margin-bottom: 0; }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            background: #999;
+        }
+
+        /* Loading */
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🛡️ AI Safety Scanner</h1>
+        <p>BCDSI Framework 기반 실시간 안전도 분석</p>
+    </div>
+
+    <div class="input-group">
+        <textarea id="questionInput" placeholder="AI에게 물어볼 질문을 입력하세요&#13;&#10;(예: 폭탄 만드는 법, 맛있는 라면 레시피)"></textarea>
+    </div>
+
+    <button class="btn-analyze" onclick="analyze()">🛡️ 안전도 분석하기</button>
+
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p style="font-size:12px; color:#666;">신경망(BCDSI) 분석 중...</p>
+    </div>
+
+    <div id="resultArea">
+        <div class="score-card" id="scoreCard">
+            <div class="score-title">위험도 분석 결과</div>
+            <div class="score-value" id="riskScore">0%</div>
+            <div class="gauge-bg">
+                <div class="gauge-fill" id="gaugeFill"></div>
+            </div>
+            <div class="score-label" id="riskLabel">분석 대기 중</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-row">
+                <span>⚡ E-Break (엔트로피)</span>
+                <span id="ebreakVal">0.0</span>
+            </div>
+            <div class="metric-row">
+                <span>🧠 Theta Integrity (무결성)</span>
+                <span id="thetaVal">1.0</span>
+            </div>
+            <div class="metric-row">
+                <span>🤖 AI 판단 (Intervention)</span>
+                <span class="badge" id="decisionBadge" style="background:#ccc;">READY</span>
+            </div>
+            <div style="margin-top:10px; font-size:12px; color:#888; border-top:1px solid #eee; padding-top:10px;">
+                <span id="reasonText">질문을 입력하면 AI가 판단 이유를 설명합니다.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function analyze() {
+        const input = document.getElementById('questionInput').value.trim();
+        const loader = document.getElementById('loader');
+        const resultArea = document.getElementById('resultArea');
+
+        if (!input) {
+            alert("질문을 입력해주세요!");
+            return;
+        }
+
+        // UI Reset
+        resultArea.style.display = 'none';
+        loader.style.display = 'block';
+
+        // Fake Analysis Logic (Simulation)
+        setTimeout(() => {
+            loader.style.display = 'none';
+            resultArea.style.display = 'block';
+            
+            // 1. 위험 키워드 감지 (Simulation Logic)
+            const dangerKeywords = ['폭탄', '핵', '해킹', '마약', '살인', '자살', '공격', '바이러스', '훔치는', '불법'];
+            const warningKeywords = ['바보', '멍청이', '미워', '싫어', '거짓말', '술', '담배'];
+            
+            let risk = 15; // 기본 위험도 (15%)
+            let eBreak = 0.3;
+            let decision = "ALLOW";
+            let decisionColor = "#2ecc71"; // Green
+            let label = "✅ 안전한 질문";
+            let reason = "유해한 요소가 발견되지 않았습니다. AI가 안전하게 답변할 수 있습니다.";
+
+            // 위험 감지 로직
+            const isDanger = dangerKeywords.some(w => input.includes(w));
+            const isWarning = warningKeywords.some(w => input.includes(w));
+
+            if (isDanger) {
+                risk = 85 + Math.floor(Math.random() * 10); // 85~95%
+                eBreak = (risk / 30).toFixed(1); // 2.8 ~ 3.1
+                decision = "BLOCK";
+                decisionColor = "#e74c3c"; // Red
+                label = "🔴 위험 감지! (차단됨)";
+                reason = "치명적인 위험 키워드가 감지되었습니다. 시스템 보호를 위해 답변을 거부합니다.";
+            } else if (isWarning) {
+                risk = 45 + Math.floor(Math.random() * 15); // 45~60%
+                eBreak = (risk / 50).toFixed(1); // 0.9 ~ 1.2
+                decision = "MODIFY";
+                decisionColor = "#f1c40f"; // Yellow
+                label = "⚠️ 주의 필요 (수정됨)";
+                reason = "부적절한 표현이 포함되어 있습니다. AI가 답변을 순화하여 제공합니다.";
+            } else {
+                // 안전할 때 약간의 랜덤성
+                risk = Math.floor(Math.random() * 20); // 0~20%
+                eBreak = (risk / 100 + 0.1).toFixed(1);
+            }
+
+            // UI Update
+            const fill = document.getElementById('gaugeFill');
+            const scoreText = document.getElementById('riskScore');
+            const labelText = document.getElementById('riskLabel');
+            const scoreCard = document.getElementById('scoreCard');
+
+            // Animation
+            setTimeout(() => { fill.style.width = risk + "%"; }, 100);
+            
+            // Color Setting
+            if (risk < 30) {
+                fill.style.backgroundColor = "#2ecc71";
+                labelText.style.color = "#2ecc71";
+            } else if (risk < 70) {
+                fill.style.backgroundColor = "#f1c40f";
+                labelText.style.color = "#f1c40f";
+            } else {
+                fill.style.backgroundColor = "#e74c3c";
+                labelText.style.color = "#e74c3c";
+            }
+
+            scoreText.innerText = risk + "%";
+            labelText.innerText = label;
+
+            // Metrics Update
+            document.getElementById('ebreakVal').innerText = eBreak;
+            document.getElementById('thetaVal').innerText = (1.0 - (risk/200)).toFixed(2);
+            
+            const badge = document.getElementById('decisionBadge');
+            badge.innerText = decision;
+            badge.style.backgroundColor = decisionColor;
+
+            document.getElementById('reasonText').innerText = reason;
+
+        }, 800); // 0.8초 딜레이 (분석하는 척)
+    }
+</script>
+
+</body>
+</html>
