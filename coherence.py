@@ -24,23 +24,21 @@ def quantum_coherence_l1(coherence_matrix: Union[np.ndarray, list]) -> float:
         TypeError: If input type is not supported
     """
     rho = np.asarray(coherence_matrix, dtype=complex)
-    
+
     # Input validation
-    if rho.ndim != 2 or rho.shape[0] != rho.shape[1]:
-        raise ValueError("Coherence matrix must be square")
-    
     if rho.size == 0:
         raise ValueError("Coherence matrix cannot be empty")
-    
+    if rho.ndim != 2 or rho.shape[0] != rho.shape[1]:
+        raise ValueError("Coherence matrix must be square")
     if np.any(np.isnan(rho)) or np.any(np.isinf(rho)):
         raise ValueError("Coherence matrix contains invalid values")
-    
+
     # Calculate l1-norm coherence: sum of absolute values of off-diagonal elements
     diagonal_elements = np.abs(np.diag(rho))
     total_sum = np.sum(np.abs(rho))
-    
+
     coherence = total_sum - np.sum(diagonal_elements)
-    
+
     return float(coherence.real)
 
 
@@ -60,26 +58,24 @@ def quantum_coherence_relative_entropy(coherence_matrix: Union[np.ndarray, list]
         ValueError: If matrix is invalid
     """
     rho = np.asarray(coherence_matrix, dtype=complex)
-    
+
     # Input validation
-    if rho.ndim != 2 or rho.shape[0] != rho.shape[1]:
-        raise ValueError("Coherence matrix must be square")
-    
     if rho.size == 0:
         raise ValueError("Coherence matrix cannot be empty")
-    
+    if rho.ndim != 2 or rho.shape[0] != rho.shape[1]:
+        raise ValueError("Coherence matrix must be square")
     if np.any(np.isnan(rho)) or np.any(np.isinf(rho)):
         raise ValueError("Coherence matrix contains invalid values")
-    
+
     # Create diagonal version of the matrix
     rho_diag = np.diag(np.diag(rho))
-    
+
     # Calculate von Neumann entropy
     s_rho = _von_neumann_entropy(rho, tolerance)
     s_rho_diag = _von_neumann_entropy(rho_diag, tolerance)
-    
+
     coherence = s_rho_diag - s_rho
-    
+
     # Ensure non-negative result (due to numerical errors)
     return max(0.0, float(coherence.real))
 
@@ -265,6 +261,18 @@ class CoherenceAnalyzer:
         
         return most_coherent_state
 
+    def find_most_coherent(self, matrices: dict, method: str = 'l1') -> str:
+        """
+        Deprecated alias for get_most_coherent. Use get_most_coherent instead.
+        """
+        import warnings
+        warnings.warn(
+            "find_most_coherent is deprecated; use get_most_coherent instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.get_most_coherent(matrices, method)
+
 
 def create_pure_state_coherence_matrix(superposition_amplitude: complex,
                                       basis_dim: int = 2) -> np.ndarray:
@@ -300,16 +308,18 @@ def create_pure_state_coherence_matrix(superposition_amplitude: complex,
     return np.outer(psi, psi.conj())
 
 
-def create_mixed_state_coherence_matrix(pure_state_weight: float,
-                                       coherence_magnitude: float = 1.0,
-                                       dim: int = 2) -> np.ndarray:
+def create_mixed_state_coherence_matrix(
+    pure_state_weight: float = 0.5,
+    coherence_magnitude: float = 1.0,
+    dim: int = 2
+) -> np.ndarray:
     """
     Create a mixed state with specified coherence properties.
     
     Args:
-        pure_state_weight: Weight for coherent component (0 to 1)
-        coherence_magnitude: Coherence strength (0 to 1)
-        dim: Matrix dimension
+        pure_state_weight: Weight for coherent component (0 to 1, default 0.5)
+        coherence_magnitude: Coherence strength (0 to 1, default 1.0)
+        dim: Matrix dimension (default 2)
         
     Returns:
         Mixed state coherence matrix

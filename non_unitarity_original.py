@@ -2,7 +2,6 @@
 Non-unitarity calculation module for ultrawork E_break engine.
 
 Implements non-unitarity measurement for quantum channels and bias induction.
-Refactored to handle both Kraus operators (3D) and superoperators (2D) properly.
 """
 
 import numpy as np
@@ -39,16 +38,14 @@ def non_unitarity(channel: Union[np.ndarray, list],
     if np.any(np.isnan(channel_matrix)) or np.any(np.isinf(channel_matrix)):
         raise ValueError("Channel matrix contains invalid values")
     
-    # Handle different channel representations
-    if channel_matrix.ndim == 3:
-        # Kraus operators - convert to superoperator
-        superoperator = _kraus_to_superoperator(channel_matrix)
-        return _calculate_non_unitarity_superoperator(superoperator, method, tolerance)
-    elif channel_matrix.ndim == 2:
-        # Superoperator representation
-        return _calculate_non_unitarity_superoperator(channel_matrix, method, tolerance)
+    if method == 'trace_distance':
+        return _non_unitarity_trace_distance(channel_matrix, tolerance)
+    elif method == 'fidelity':
+        return _non_unitarity_fidelity(channel_matrix, tolerance)
+    elif method == 'norm_difference':
+        return _non_unitarity_norm_difference(channel_matrix, tolerance)
     else:
-        raise ValueError("Channel must be 2D (superoperator) or 3D (Kraus operators) matrix")
+        raise ValueError(f"Method '{method}' not supported. Use 'trace_distance', 'fidelity', or 'norm_difference'")
 
 
 def bias_induction(channel: Union[np.ndarray, list],
@@ -74,37 +71,22 @@ def bias_induction(channel: Union[np.ndarray, list],
     if channel_matrix.ndim < 2:
         raise ValueError("Channel must be at least 2D matrix")
     
-    if channel_matrix.size == 0:
-        raise ValueError("Channel matrix cannot be empty")
-    
     if np.any(np.isnan(channel_matrix)) or np.any(np.isinf(channel_matrix)):
         raise ValueError("Channel matrix contains invalid values")
     
-    # Convert to superoperator if needed
-    if channel_matrix.ndim == 3:
-        channel_superop = _kraus_to_superoperator(channel_matrix)
-    else:
-        channel_superop = channel_matrix
-    
     if reference_unitary is None:
         # Use identity as default reference
-        dim = int(np.sqrt(channel_superop.shape[0]))  # Extract dimension from superoperator
+        dim = channel_matrix.shape[0]
         reference_unitary = np.eye(dim, dtype=complex)
     else:
         reference_unitary = np.asarray(reference_unitary, dtype=complex)
     
-    # Convert reference to superoperator if needed
-    if reference_unitary.ndim == 2 and reference_unitary.shape[0] == reference_unitary.shape[1]:
-        ref_superop = _unitary_to_superoperator(reference_unitary)
-    else:
-        ref_superop = reference_unitary
-    
     if method == 'operator_norm':
-        return _bias_operator_norm(channel_superop, ref_superop)
+        return _bias_operator_norm(channel_matrix, reference_unitary)
     elif method == 'trace_norm':
-        return _bias_trace_norm(channel_superop, ref_superop)
+        return _bias_trace_norm(channel_matrix, reference_unitary)
     elif method == 'fidelity':
-        return _bias_fidelity(channel_superop, ref_superop)
+        return _bias_fidelity(channel_matrix, reference_unitary)
     else:
         raise ValueError(f"Method '{method}' not supported")
 
@@ -124,13 +106,9 @@ def channel_completely_positive(channel: Union[np.ndarray, list],
     channel_matrix = np.asarray(channel, dtype=complex)
     
     try:
-        # Convert to superoperator for Choi matrix analysis
-        if channel_matrix.ndim == 3:
-            superoperator = _kraus_to_superoperator(channel_matrix)
-        else:
-            superoperator = channel_matrix
-        
-        return _is_completely_positive(superoperator, tolerance)
+        # Check if channel is trace-preserving and completely positive
+        # This is a simplified check - full CP test requires Choi matrix
+        return _is_completely_positive(channel_matrix, tolerance)
     except:
         return False
 
@@ -156,164 +134,92 @@ def channel_trace_preserving(channel: Union[np.ndarray, list],
         return np.allclose(trace_sum, np.eye(channel_matrix.shape[1]), atol=tolerance)
     else:  # Superoperator
         # Check if channel preserves trace
-        dim = int(np.sqrt(channel_matrix.shape[0]))
-        test_state = np.eye(dim) / dim
-        output = _apply_superoperator(channel_matrix, test_state)
+        test_state = np.eye(channel_matrix.shape[0]) / channel_matrix.shape[0]
+        output = channel_matrix @ test_state
         return np.isclose(np.trace(output), np.trace(test_state), atol=tolerance)
 
 
-def _calculate_non_unitarity_superoperator(superoperator: np.ndarray, 
-                                           method: str, 
-                                           tolerance: float) -> float:
-    """Calculate non-unitarity for superoperator representation."""
-    if method == 'trace_distance':
-        return _non_unitarity_trace_distance(superoperator, tolerance)
-    elif method == 'fidelity':
-        return _non_unitarity_fidelity(superoperator, tolerance)
-    elif method == 'norm_difference':
-        return _non_unitarity_norm_difference(superoperator, tolerance)
-    else:
-        raise ValueError(f"Method '{method}' not supported")
-
-
-def _kraus_to_superoperator(kraus_operators: np.ndarray) -> np.ndarray:
-    """
-    Convert Kraus operators to superoperator representation.
-    
-    Args:
-        kraus_operators: 3D array of Kraus operators
-        
-    Returns:
-        Superoperator matrix
-    """
-    dim = kraus_operators.shape[1]
-    superoperator = np.zeros((dim * dim, dim * dim), dtype=complex)
-    
-    for K in kraus_operators:
-        # Vectorize K ⊗ K* operation
-        superoperator += np.kron(K, K.conj())
-    
-    return superoperator
-
-
-def _unitary_to_superoperator(unitary: np.ndarray) -> np.ndarray:
-    """
-    Convert unitary matrix to superoperator representation.
-    
-    Args:
-        unitary: Unitary matrix
-        
-    Returns:
-        Superoperator matrix
-    """
-    return np.kron(unitary, unitary.conj())
-
-
-def _apply_superoperator(superoperator: np.ndarray, state: np.ndarray) -> np.ndarray:
-    """
-    Apply superoperator to state.
-    
-    Args:
-        superoperator: Superoperator matrix
-        state: Input state matrix
-        
-    Returns:
-        Output state matrix
-    """
-    # Vectorize state, apply superoperator, then reshape back
-    state_vec = state.flatten()
-    output_vec = superoperator @ state_vec
-    return output_vec.reshape(state.shape)
-
-
-def _non_unitarity_trace_distance(superoperator: np.ndarray, tolerance: float) -> float:
+def _non_unitarity_trace_distance(channel: np.ndarray, tolerance: float) -> float:
     """Calculate non-unitarity using trace distance to nearest unitary."""
     # Find nearest unitary (simplified approach)
-    nearest_unitary = _find_nearest_unitary_superoperator(superoperator)
+    nearest_unitary = _find_nearest_unitary(channel)
     
     # Calculate trace distance
-    difference = superoperator - nearest_unitary
-    trace_distance = 0.5 * np.linalg.norm(difference, 'fro')  # Use Frobenius norm for stability
+    difference = channel - nearest_unitary
+    trace_distance = 0.5 * np.linalg.norm(difference, 'nuc')
     
     return float(trace_distance.real)
 
 
-def _non_unitarity_fidelity(superoperator: np.ndarray, tolerance: float) -> float:
+def _non_unitarity_fidelity(channel: np.ndarray, tolerance: float) -> float:
     """Calculate non-unitarity using fidelity to nearest unitary."""
-    nearest_unitary = _find_nearest_unitary_superoperator(superoperator)
+    nearest_unitary = _find_nearest_unitary(channel)
     
     # Calculate fidelity
-    fidelity = _matrix_fidelity(superoperator, nearest_unitary)
+    fidelity = _matrix_fidelity(channel, nearest_unitary)
     
     # Non-unitarity = 1 - fidelity
     return 1.0 - fidelity
 
 
-def _non_unitarity_norm_difference(superoperator: np.ndarray, tolerance: float) -> float:
+def _non_unitarity_norm_difference(channel: np.ndarray, tolerance: float) -> float:
     """Calculate non-unitarity using norm difference."""
-    # Check if superoperator represents unitary channel
-    is_unitary = _is_unitary_superoperator(superoperator, tolerance)
+    # Check if channel is unitary
+    is_unitary = _is_unitary(channel, tolerance)
     
     if is_unitary:
         return 0.0
     
     # Calculate deviation from unitarity
-    # For superoperator, check if it preserves inner products
-    deviation = np.linalg.norm(superoperator.conj().T @ superoperator - np.eye(superoperator.shape[0]), 'fro')
+    channel_dagger = channel.conj().T
+    unitarity_check = channel_dagger @ channel
+    
+    deviation = np.linalg.norm(unitarity_check - np.eye(channel.shape[0]), 'fro')
     
     return float(deviation.real)
 
 
-def _bias_operator_norm(superoperator: np.ndarray, reference: np.ndarray) -> float:
+def _bias_operator_norm(channel: np.ndarray, reference: np.ndarray) -> float:
     """Calculate bias using operator norm."""
-    difference = superoperator - reference
+    difference = channel - reference
     return np.linalg.norm(difference, 2)  # Spectral norm
 
 
-def _bias_trace_norm(superoperator: np.ndarray, reference: np.ndarray) -> float:
+def _bias_trace_norm(channel: np.ndarray, reference: np.ndarray) -> float:
     """Calculate bias using trace norm."""
-    difference = superoperator - reference
+    difference = channel - reference
     return np.linalg.norm(difference, 'nuc')  # Nuclear norm
 
 
-def _bias_fidelity(superoperator: np.ndarray, reference: np.ndarray) -> float:
+def _bias_fidelity(channel: np.ndarray, reference: np.ndarray) -> float:
     """Calculate bias using fidelity."""
-    fidelity = _matrix_fidelity(superoperator, reference)
+    fidelity = _matrix_fidelity(channel, reference)
     return 1.0 - fidelity
 
 
-def _find_nearest_unitary_superoperator(superoperator: np.ndarray) -> np.ndarray:
-    """Find nearest unitary superoperator using polar decomposition."""
-    # Simplified approach: use SVD on the effective channel
-    dim = int(np.sqrt(superoperator.shape[0]))
-    
-    # Extract effective channel matrix (this is simplified)
-    effective_channel = superoperator[:dim, :dim]
-    
-    # Find nearest unitary to effective channel
-    U, s, Vh = np.linalg.svd(effective_channel)
+def _find_nearest_unitary(matrix: np.ndarray) -> np.ndarray:
+    """Find nearest unitary matrix using polar decomposition."""
+    # Simplified approach: use SVD
+    U, s, Vh = np.linalg.svd(matrix)
     nearest_unitary = U @ Vh
     
-    # Convert back to superoperator
-    return _unitary_to_superoperator(nearest_unitary)
+    return nearest_unitary
 
 
-def _is_unitary_superoperator(superoperator: np.ndarray, tolerance: float) -> bool:
-    """Check if superoperator represents unitary channel."""
-    # Check if superoperator preserves inner products
-    product = superoperator.conj().T @ superoperator
-    return np.allclose(product, np.eye(superoperator.shape[0]), atol=tolerance)
+def _is_unitary(matrix: np.ndarray, tolerance: float) -> bool:
+    """Check if matrix is unitary."""
+    if matrix.shape[0] != matrix.shape[1]:
+        return False
+    
+    product = matrix.conj().T @ matrix
+    return np.allclose(product, np.eye(matrix.shape[0]), atol=tolerance)
 
 
-def _is_completely_positive(superoperator: np.ndarray, tolerance: float) -> bool:
-    """Check if channel is completely positive using Choi matrix."""
+def _is_completely_positive(matrix: np.ndarray, tolerance: float) -> bool:
+    """Check if channel is completely positive (simplified)."""
+    # This is a simplified check - full CP test requires Choi matrix analysis
     try:
-        # Extract Choi matrix from superoperator
-        dim = int(np.sqrt(superoperator.shape[0]))
-        choi_matrix = superoperator.reshape(dim, dim, dim, dim).transpose(0, 2, 1, 3).reshape(dim*dim, dim*dim)
-        
-        # Check if Choi matrix is positive semidefinite
-        eigenvalues = np.linalg.eigvalsh(choi_matrix)
+        eigenvalues = np.linalg.eigvals(matrix)
         return np.all(eigenvalues >= -tolerance)
     except:
         return False
@@ -372,23 +278,11 @@ class NonUnitarityAnalyzer:
             'bias_fidelity': bias_induction(channel, method='fidelity'),
             'is_completely_positive': channel_completely_positive(channel, self.tolerance),
             'is_trace_preserving': channel_trace_preserving(channel, self.tolerance),
-            'is_unitary': self._is_channel_unitary(channel_matrix)
+            'is_unitary': _is_unitary(channel_matrix, self.tolerance)
         }
         
         self.analysis_history.append(analysis)
         return analysis
-    
-    def _is_channel_unitary(self, channel_matrix: np.ndarray) -> bool:
-        """Check if channel represents unitary evolution."""
-        if channel_matrix.ndim == 2:
-            # Superoperator case
-            return _is_unitary_superoperator(channel_matrix, self.tolerance)
-        elif channel_matrix.ndim == 3:
-            # Kraus operators case - check if single unitary Kraus operator
-            if len(channel_matrix) == 1:
-                K = channel_matrix[0]
-                return np.allclose(K.conj().T @ K, np.eye(K.shape[0]), atol=self.tolerance)
-        return False
     
     def compare_channels(self, channels: dict) -> dict:
         """
@@ -418,9 +312,6 @@ class NonUnitarityAnalyzer:
         Returns:
             Name of most biased channel
         """
-        if method not in ['operator_norm', 'trace_norm', 'fidelity']:
-            raise ValueError("Method must be 'operator_norm', 'trace_norm', or 'fidelity'")
-        
         max_bias = -1
         most_biased = ""
         
@@ -446,15 +337,12 @@ def create_unitary_channel(theta: float, phi: float = 0.0) -> np.ndarray:
         phi: Phase angle
         
     Returns:
-        Unitary channel matrix (Kraus operators)
+        Unitary channel matrix
     """
-    unitary = np.array([
+    return np.array([
         [np.cos(theta), -np.exp(1j * phi) * np.sin(theta)],
         [np.exp(-1j * phi) * np.sin(theta), np.cos(theta)]
     ], dtype=complex)
-    
-    # Return as single Kraus operator
-    return np.array([unitary], dtype=complex)
 
 
 def create_dephasing_channel(dephasing_rate: float) -> np.ndarray:
@@ -465,7 +353,7 @@ def create_dephasing_channel(dephasing_rate: float) -> np.ndarray:
         dephasing_rate: Dephasing rate (0 to 1)
         
     Returns:
-        Dephasing channel matrix (Kraus operators)
+        Dephasing channel matrix
     """
     if not 0 <= dephasing_rate <= 1:
         raise ValueError("Dephasing rate must be between 0 and 1")
@@ -474,8 +362,8 @@ def create_dephasing_channel(dephasing_rate: float) -> np.ndarray:
     K0 = np.sqrt(1 - dephasing_rate) * np.array([[1, 0], [0, 1]], dtype=complex)
     K1 = np.sqrt(dephasing_rate) * np.array([[1, 0], [0, -1]], dtype=complex)
     
-    # Return as array of Kraus operators
-    return np.array([K0, K1], dtype=complex)
+    # Return as superoperator (simplified)
+    return np.array([K0, K1])
 
 
 def create_amplitude_damping_channel(damping_rate: float) -> np.ndarray:
@@ -486,7 +374,7 @@ def create_amplitude_damping_channel(damping_rate: float) -> np.ndarray:
         damping_rate: Damping rate (0 to 1)
         
     Returns:
-        Amplitude damping channel matrix (Kraus operators)
+        Amplitude damping channel matrix
     """
     if not 0 <= damping_rate <= 1:
         raise ValueError("Damping rate must be between 0 and 1")
@@ -495,4 +383,4 @@ def create_amplitude_damping_channel(damping_rate: float) -> np.ndarray:
     K0 = np.array([[1, 0], [0, np.sqrt(1 - damping_rate)]], dtype=complex)
     K1 = np.array([[0, np.sqrt(damping_rate)], [0, 0]], dtype=complex)
     
-    return np.array([K0, K1], dtype=complex)
+    return np.array([K0, K1])
