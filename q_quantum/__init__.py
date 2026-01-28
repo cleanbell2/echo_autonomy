@@ -1,41 +1,35 @@
-# q_quantum/__init__.py
 """
-q_quantum package init
-- keep: from q_quantum import EBreakCalculator
-- avoid: eager imports that cause runpy/circular warnings
+Δ-Log v3.4 Core Package
 """
-from __future__ import annotations
+# 1. Core Logic Imports
+from .ebreak_calculator import EBreakCalculator
 
-from importlib import import_module
-from typing import Any, TYPE_CHECKING
+# 2. BCDSI Imports (Recovered modules)
+from .bcdsi.monitor import EBreakMonitor
+from .bcdsi.intervention import BcdsiIntervenor
+from .bcdsi.threshold import DynamicThreshold
 
-__all__ = [
-    "EBreachEngine",
-    "EBreakEngine",
-    "von_neumann_entropy",
-    "EBreakCalculator",
-]
+__version__ = "3.4.0"
 
-if TYPE_CHECKING:
-    # 타입체커 전용(런타임 import 아님)
-    from .e_break_engine import EBreachEngine, EBreakEngine, von_neumann_entropy
-    from .ebreak_calculator import EBreakCalculator
-
-_LAZY = {
-    "EBreachEngine": (".e_break_engine", "EBreachEngine"),
-    "EBreakEngine": (".e_break_engine", "EBreakEngine"),
-    "von_neumann_entropy": (".e_break_engine", "von_neumann_entropy"),
-    "EBreakCalculator": (".ebreak_calculator", "EBreakCalculator"),
+# 3. The CONTRACT (이게 없어서 에러가 났음)
+CONTRACT = {
+    "entrypoint": "EBreakCalculator.calculate_ebreak()",
+    "required_returns": ["e_break_qbn", "theta_integrity", "bcdsi_detected", "analysis_summary"],
+    "version": __version__
 }
 
-def __getattr__(name: str) -> Any:
-    if name in _LAZY:
-        mod_name, sym = _LAZY[name]
-        mod = import_module(mod_name, __name__)
-        val = getattr(mod, sym)
-        globals()[name] = val  # 캐시
-        return val
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__all__ = [
+    "EBreakCalculator", 
+    "EBreakMonitor", 
+    "BcdsiIntervenor", 
+    "CONTRACT"
+]
+
+# Optional: Threshold might be missing, create dummy if needed
+try:
+    from .bcdsi.threshold import DynamicThreshold
+except ImportError:
+    pass
 
 
 

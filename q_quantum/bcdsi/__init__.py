@@ -1,3 +1,3 @@
-from .monitor import CoherenceMonitor
+from .monitor import EBreakMonitor
 
-__all__ = ['CoherenceMonitor']
+__all__ = ['EBreakMonitor']
