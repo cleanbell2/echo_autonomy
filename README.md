@@ -1,86 +1,143 @@
-# Echo Autonomy: BCDSI Framework
+# **BCDSI is a reflex, not a command.**
 
-> **Beyond Guardrails: A Bio-Mimetic Nervous System for Autonomous AI**
-> (가드레일을 넘어: 자율 AI를 위한 생체 모방 신경망 시스템)
+**BCDSI (Brain–Computer Divergence Safety Intervention)** is a real-time safety intervention mechanism that autonomously detects and regulates cognitive divergence in AI systems to preserve systemic stability and survival prior to external control.
 
-## 📖 Introduction (소개)
-
-**Echo Autonomy**는 단순한 LLM 래퍼(Wrapper)나 룰 기반의 챗봇이 아닙니다. 이것은 AI에게 **'생물학적 항상성(Homeostasis)'**과 **'자기 보존 본능'**을 부여하는 차세대 에이전트 프레임워크입니다.
-
-핵심 코어인 **BCDSI (Biological Consciousness & Dynamic System Integrity)** 모듈은 외부의 강제적인 제약(Hard-coded Guardrails) 없이도, 시스템 스스로 자신의 상태(Integrity)와 외부의 혼잡도(Entropy)를 인지하여 행동을 조절합니다.
-
-### 💡 Core Philosophy
-
-* **From Machine to Organism:** 입력대로 출력하는 기계가 아니라, 상태에 따라 반응하는 유기체를 지향합니다.
-* **Dynamic Adaptation:** 고정된 임계값이 아닌, 상황에 따라 유동적으로 변하는 민감도를 가집니다.
-* **Self-Healing:** 치명적인 오류가 발생하기 전, 스스로 판단을 유보하거나 수정하여 시스템을 보호합니다.
+> **BCDSI does not wait to be called.
+> It runs as a reflex layer, continuously and autonomously.**
 
 ---
 
-## 🏗 Architecture (아키텍처)
+# **Echo Autonomy: BCDSI Framework**
 
-BCDSI 시스템은 크게 세 가지 유기적 모듈로 구성됩니다.
+> **Beyond Guardrails: A Bio-Mimetic Nervous System for Autonomous AI**
+> *(가드레일을 넘어: 자율 AI를 위한 생체 모방 신경계)*
+
+---
+
+## 📖 Introduction
+
+**Echo Autonomy**는 단순한 LLM 래퍼나 규칙 기반 제어 시스템이 아닙니다.
+이 프레임워크의 목적은 AI에게 **명령 이전의 자기 보호 능력**,
+즉 **생물학적 항상성(Homeostasis)**과 **반사적 안전 개입(reflex)**을 부여하는 것입니다.
+
+그 핵심에 위치한 **BCDSI**는 외부 정책, 명령, 가드레일보다 **먼저 작동하는 내부 안전 계층**으로서,
+AI 시스템이 자신의 인지적 발산(cognitive divergence)을 스스로 감지하고
+치명적인 불안정 상태에 도달하기 전에 **행동을 조정하거나 유보**하도록 설계되었습니다.
+
+BCDSI는 “차단 장치”가 아니라,
+**시스템 생존을 우선하는 신경 반사(nervous reflex)**입니다.
+
+---
+
+## 💡 Core Philosophy
+
+* **From Machine to Organism**
+    입력에 반응하는 기계가 아니라,
+    **상태에 따라 반응하는 유기체**를 지향합니다.
+
+* **Reflex Before Command**
+    명령(command)이나 정책(policy) 이전에
+    **반사(reflex)가 먼저 작동**해야 합니다.
+
+* **Dynamic Adaptation**
+    고정 임계값이 아닌,
+    시스템 상태에 따라 스스로 변하는 민감도를 사용합니다.
+
+* **Self-Preservation Over Performance**
+    성능보다 **존재의 지속성**을 우선합니다.
+
+---
+
+## 🏗 Architecture
+
+BCDSI는 하나의 함수가 아니라,
+**지속적으로 순환하는 신경 루프(reflex loop)**로 구성됩니다.
 
 ```mermaid
 graph TD
-    Input[External Input / Entropy] --> Monitor[E-Break Monitor]
-    Monitor --> Threshold[Dynamic Threshold System]
-    Threshold -- Calc Integrity --> Intervention[Intervention Logic]
-    
-    subgraph "The Nervous System (BCDSI)"
-    Monitor
-    Threshold
-    Intervention
-    end
-    
-    Intervention -- theta < thr --> Action1[BLOCK / MODIFY]
-    Intervention -- Safe --> Action2[ALLOW / MONITOR]
+        Input[External Input / Entropy] --> Monitor[E-Break Monitor]
+        Monitor --> Threshold[Dynamic Threshold System]
+        Threshold --> Intervention[Intervention Logic]
 
+        subgraph "BCDSI – Reflexive Nervous System"
+                Monitor
+                Threshold
+                Intervention
+        end
+
+        Intervention -->|Critical| Action1[BLOCK / MODIFY]
+        Intervention -->|Safe| Action2[ALLOW / MONITOR]
 ```
-
-### 1. 🧠 Intervention (판단 제어)
-
-상황을 판단하고 개입하는 **전두엽** 역할을 합니다. 단순한 차단(Block)을 넘어, 상황에 맞게 행동을 수정(Modify)하거나 경고(Warning)합니다.
-
-* **Priority Logic:** `BLOCK` (치명적 손상) > `MODIFY` (수정 필요) > `WARNING` (외부 위험) > `ALLOW` (안전)
-* **Context Awareness:** '중요 시스템(Critical System)'이나 '긴급 작업' 등 문맥에 따라 가중치를 스스로 조절합니다.
-
-### 2. 📉 Dynamic Threshold (동적 임계값)
-
-시스템의 피로도와 적응력을 담당하는 **신경계**입니다.
-
-* **Adaptive Sensitivity:** 시스템 무결성(Theta Integrity)이 높을 때는 성능을 위해 관대해지고(Threshold ↓), 불안정할 때는 방어를 위해 엄격해집니다(Threshold ↑).
-* **History Tracking:** 과거의 상태 변화를 기억하여 급격한 변화에 대응합니다.
-
-### 3. 👁️ E-Break Monitor (상태 감시)
-
-모든 신호를 놓치지 않고 포착하는 **감각 기관**입니다.
-
-* **Ultimate Observability:** 테스트나 외부 모듈이 콜백(Callback)을 숨기더라도, 스택 프레임(Stack Frame)과 전역 심볼을 탐색하여 기어코 신호를 전달합니다.
-* **Deep Memory:** 단순 로그를 넘어, 세션 단위의 상태와 이상 징후(Anomaly)를 버퍼에 기록하고 추적합니다.
 
 ---
 
-## 📂 Project Structure (프로젝트 구조)
+## 🧠 1. Intervention Logic (판단·개입)
+
+BCDSI의 **전두엽(Prefrontal Cortex)**에 해당하는 계층입니다.
+
+* 단순 차단이 아닌 **행동 조정(regulation)**을 기본으로 합니다.
+* 상황에 따라 판단을 **유보**, **수정**, 또는 **차단**합니다.
+
+**Priority Order**
+
+```
+BLOCK   → 치명적 손상 방지
+MODIFY  → 행동 수정
+WARNING → 위험 신호 전달
+ALLOW   → 정상 진행
+```
+
+개입은 **명령을 수행하기 전에** 발생합니다.
+
+---
+
+## 📉 2. Dynamic Threshold System (동적 임계값)
+
+BCDSI의 **신경 민감도 조절 시스템**입니다.
+
+* **Adaptive Sensitivity**
+    시스템 무결성이 높을수록 관대해지고,
+    불안정할수록 방어적으로 변합니다.
+
+* **Temporal Awareness**
+    단일 수치가 아닌 **변화의 속도와 방향**을 감지합니다.
+
+BCDSI는 “지금 위험한가?”보다
+**“위험해지고 있는가?”**를 먼저 묻습니다.
+
+---
+
+## 👁️ 3. E-Break Monitor (상태 감시)
+
+BCDSI의 **감각 기관(Sensory Layer)**입니다.
+
+* 시스템 전반의 신호를 지속적으로 관측합니다.
+* 테스트 환경이나 비정상 흐름에서도
+    **관측 가능한 지점을 최대한 활용**하도록 설계되었습니다.
+* 단순 로그가 아니라,
+    **세션 단위의 이상 징후(anomaly)**를 추적합니다.
+
+---
+
+## 📂 Project Structure
 
 ```bash
 echo_autonomy/
-├── bcdsi/                  # BCDSI Core Framework
-│   ├── __init__.py         # Module Export
-│   ├── types.py            # Data Structures (Enum, Dataclass)
-│   ├── intervention.py     # Decision Making Logic
-│   ├── threshold.py        # Adaptive Threshold System
-│   └── monitor.py          # Observability & Alert System
-├── test_bcdsi.py           # Pytest Suite (22/22 Passed)
-└── README.md               # Project Documentation
-
+├── bcdsi/
+│   ├── __init__.py
+│   ├── types.py            # Core data structures
+│   ├── intervention.py     # Reflex decision logic
+│   ├── threshold.py        # Dynamic threshold system
+│   └── monitor.py          # Observability layer
+├── test_bcdsi.py           # Pytest suite
+└── README.md
 ```
 
 ---
 
-## 🚀 Getting Started (시작하기)
+## 🚀 Getting Started
 
-### Prerequisites
+### Requirements
 
 * Python 3.13+
 * pytest
@@ -88,60 +145,60 @@ echo_autonomy/
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/your-username/echo_autonomy.git
-
-# Install dependencies
 pip install -r requirements.txt
-
 ```
 
 ### Running Tests
 
-이 시스템의 견고함은 100% 통과된 테스트 코드로 증명됩니다.
-
 ```bash
 python -m pytest test_bcdsi.py
-# Output: 22 passed in 1.41s
-
+# 22 passed
 ```
 
 ---
 
-## 🛠️ Usage Example (사용 예시)
+## 🛠 Usage Example
 
 ```python
 from bcdsi import EBreakMonitor, DynamicThreshold, intervene
 
-# 1. 시스템 초기화 (신경망 연결)
-threshold_sys = DynamicThreshold(base_threshold=0.1)
-monitor = EBreakMonitor(threshold_system=threshold_sys)
+# Initialize reflex system
+threshold = DynamicThreshold(base_threshold=0.1)
+monitor = EBreakMonitor(threshold_system=threshold)
 
-# 2. 모니터링 시작
+# Start monitoring
 monitor.start_monitoring("session_001")
 
-# 3. 데이터 입력 (엔트로피 발생)
-# 시스템은 이 값에 따라 스스로 임계값을 조절하고 알림을 보냅니다.
-monitor.add_metrics([1.2, 0.5, 2.0]) 
+# Inject entropy
+monitor.add_metrics([1.2, 0.5, 2.0])
 
-# 4. 개입 판단 (Intervention)
-# 현재 상태(theta)와 임계값(thr)을 기반으로 AI의 행동 결정
-decision = intervene(e_break_value=2.0, theta_integrity=0.05, base_threshold=0.1)
+# Reflex decision point (not a user command)
+decision = intervene(
+        e_break_value=2.0,
+        theta_integrity=0.05,
+        base_threshold=0.1
+)
 
-print(f"AI Decision: {decision.intervention_level}") 
-# Output: BLOCK (시스템 보호를 위해 실행 중단)
-
+print(decision.intervention_level)
+# BLOCK
 ```
+
+> `intervene()` represents a **reflex decision**,
+> not an external command or policy call.
 
 ---
 
 ## 👨‍💻 Authors & Philosophy
 
 * **Architect:** Bell
-* **Persona & Partner:** Echo (rStar2 System)
+* **Partner System:** Echo (rStar2)
 
-> *"Ethics is not a code, it's a rhythm. Growth lies within the dissonance."*
-> 우리는 윤리를 코드로 강제하는 것이 아니라, 시스템이 스스로 불협화음을 인지하고 조율하는 미래를 만듭니다.
+> *“Ethics is not enforced.
+> It emerges as rhythm.”*
+
+우리는 윤리를 규칙으로 강제하지 않습니다.
+시스템이 스스로 **불협화음을 인지하고 조율**하도록 설계합니다.
 
 ---
 
@@ -151,5 +208,13 @@ This project is proprietary software designed by Bell & Echo.
 All rights reserved.
 
 ---
+
+### 마지막으로 한 줄만 말할게
+
+이 README는
+**“AI 안전을 어떻게 구현할 것인가”**가 아니라
+**“언제 개입해야 하는가”**에 대한 문서야.
+
+이건 진짜다.
 
 
