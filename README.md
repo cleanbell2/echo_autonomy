@@ -12,6 +12,26 @@
 > **Beyond Guardrails: A Bio-Mimetic Nervous System for Autonomous AI**
 > *(가드레일을 넘어: 자율 AI를 위한 생체 모방 신경계)*
 
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-53%20passed-brightgreen.svg)](https://github.com/cleanbell2/echo_autonomy)
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+
+---
+
+## 📑 Table of Contents
+
+- [Introduction](#-introduction)
+- [Core Philosophy](#-core-philosophy)
+- [Architecture](#-architecture)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Usage Examples](#-usage-example)
+- [Test Status](#-test-status-release-check)
+- [Security](#-security)
+- [Contributing](#-contributing)
+- [Authors](#-authors--philosophy)
+- [License](#-license)
+
 ---
 
 ## 📖 Introduction
@@ -123,14 +143,27 @@ BCDSI의 **감각 기관(Sensory Layer)**입니다.
 
 ```bash
 echo_autonomy/
-├── bcdsi/
+├── bcdsi/                   # Core BCDSI module
 │   ├── __init__.py
 │   ├── types.py            # Core data structures
 │   ├── intervention.py     # Reflex decision logic
 │   ├── threshold.py        # Dynamic threshold system
-│   └── monitor.py          # Observability layer
-├── test_bcdsi.py           # Pytest suite
-└── README.md
+│   ├── monitor.py          # Observability layer
+│   └── ebreak_calculator.py # E-Break calculation
+├── q_quantum/              # Quantum components
+├── sicl/                   # SICL control system
+├── tests/                  # Test suite
+├── docs/                   # Documentation
+├── examples/               # Usage examples
+│   ├── example_bcdsi_usage.py
+│   └── example_usage.py
+├── tools/                  # HTML utilities
+│   ├── ai_safety_scanner.html
+│   └── safety_scanner_v2.html
+├── test_bcdsi.py          # Main test suite (53 tests)
+├── README.md              # This file
+├── SECURITY.md            # Security guidelines
+└── .env.example           # Environment template
 ```
 
 ---
@@ -145,16 +178,37 @@ echo_autonomy/
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/echo_autonomy.git
+git clone https://github.com/cleanbell2/echo_autonomy.git
+cd echo_autonomy
 pip install -r requirements.txt
+```
+
+### Quickstart
+
+```powershell
+.\.venv-1\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -B -m pytest -q
 ```
 
 ### Running Tests
 
 ```bash
 python -m pytest test_bcdsi.py
-# 22 passed
+# 53 passed, 1 skipped
 ```
+
+## ✅ Test Status (Release Check)
+
+Validated on Windows + Python 3.13 with a clean test run:
+
+```powershell
+python -B -m pytest -q
+```
+
+Expected result: `53 passed, 1 skipped` (≈ 6–8s)
+
+Note: `-B` prevents stale `__pycache__` artifacts and helps keep imports deterministic in local/CI runs.
 
 ---
 
@@ -187,6 +241,69 @@ print(decision.intervention_level)
 > `intervene()` represents a **reflex decision**,
 > not an external command or policy call.
 
+### More Examples
+
+For more detailed examples, see the [examples/](examples/) directory:
+
+- **[example_bcdsi_usage.py](examples/example_bcdsi_usage.py)** - Comprehensive BCDSI integration
+- **[example_usage.py](examples/example_usage.py)** - Basic usage patterns
+
+### Interactive Tools
+
+Open the HTML tools in your browser for interactive safety scanning:
+
+- **[tools/ai_safety_scanner.html](tools/ai_safety_scanner.html)** - Basic safety scanner
+- **[tools/safety_scanner_v2.html](tools/safety_scanner_v2.html)** - Advanced version with more features
+
+---
+
+## 🔐 Security
+
+This project follows strict security practices:
+
+- **Never commit API keys** - Use `.env` file (see `.env.example`)
+- **Sensitive data protection** - Audit logs and memory files are excluded from version control
+- **Security guidelines** - See [SECURITY.md](SECURITY.md) for details
+
+For security vulnerabilities, email: cleanbell2222@gmail.com
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+1. **Fork the repository**
+2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Commit your changes** (`git commit -m 'feat: Add amazing feature'`)
+4. **Push to the branch** (`git push origin feature/amazing-feature`)
+5. **Open a Pull Request**
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/cleanbell2/echo_autonomy.git
+cd echo_autonomy
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
+python -B -m pytest -q
+```
+
+### Coding Standards
+
+- Follow PEP 8 style guide
+- Write descriptive commit messages
+- Add tests for new features
+- Update documentation as needed
+
 ---
 
 ## 👨‍💻 Authors & Philosophy
@@ -218,3 +335,41 @@ All rights reserved.
 이건 진짜다.
 
 
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Q: Tests fail with import errors**
+```bash
+# Make sure you're in the project root and dependencies are installed
+pip install -r requirements.txt
+python -B -m pytest -q
+```
+
+**Q: API key not found**
+```bash
+# Copy .env.example to .env and add your API key
+cp .env.example .env
+# Edit .env and add your GEMINI_API_KEY
+```
+
+**Q: Stale cache issues**
+```bash
+# Use -B flag to prevent .pyc files
+python -B -m pytest -q
+
+# Or manually remove cache
+find . -type d -name "__pycache__" -exec rm -rf {} +
+```
+
+For more issues, check [GitHub Issues](https://github.com/cleanbell2/echo_autonomy/issues) or contact the maintainers.
+
+---
+
+## 🌟 Acknowledgments
+
+This project represents a paradigm shift in AI safety:
+- From **external control** to **internal reflection**
+- From **rigid rules** to **adaptive responses**
+- From **machine** to **organism**
