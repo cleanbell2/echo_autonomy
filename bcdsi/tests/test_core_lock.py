@@ -1,8 +1,8 @@
 import pytest
 
 pytest.skip(
-    "Skipped (expected): optional Intervention component is not available in this minimal build. "
-    "To enable: install full dependencies and re-run `python -B -m pytest -q`.",
+    "Skipped (expected): this minimal release build does not include optional compatibility components. "
+    "To run the full suite, install full dependencies and re-run `python -B -m pytest -q`.",
     allow_module_level=True,
 )
 
