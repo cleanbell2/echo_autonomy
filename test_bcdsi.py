@@ -283,7 +283,6 @@ class TestEBreakMonitor:
         assert summary["session_id"] == "test_session"
         assert summary["metrics_processed"] >= 3
     
-    @pytest.mark.skip(reason="Callback mechanism requires full build dependencies")
     def test_real_time_monitoring(self):
         """Test real-time monitoring functionality."""
         monitor = EBreakMonitor(session_duration=1)
@@ -293,7 +292,7 @@ class TestEBreakMonitor:
             alert_data.append(data)
         
         # Start monitoring with callback
-        monitor.start_monitoring("realtime_test")
+        monitor.start_monitoring("realtime_test", alert_callback=alert_callback)
         
         # Add metrics that should trigger alerts
         monitor.add_metrics(2.0)  # Should trigger critical alert
