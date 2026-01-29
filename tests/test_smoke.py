@@ -16,7 +16,10 @@ def test_core_contract_lock():
     assert EBreakCalculator is not None
     # Intervention이 로드되었는지 확인 (없으면 경고만 하고 통과)
     if Intervention is None:
-        pytest.skip("Optional component 'Intervention' is not included in this release build (compat mode). Skipping this test.")
+        pytest.skip(
+            "Skipped (expected): optional Intervention component is not available in this minimal build. "
+            "To enable: install full dependencies and re-run `python -B -m pytest -q`."
+        )
     assert Intervention is not None
 
 def test_monitor_resurrection():
