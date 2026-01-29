@@ -218,19 +218,11 @@ Note: `-B` prevents stale `__pycache__` artifacts and helps keep imports determi
 
 ### Quickstart (Windows / Python 3.13)
 
-If you already have a virtual environment set up:
-
 ```powershell
+py -3.13 -m venv .venv-1
 .\.venv-1\Scripts\Activate.ps1
-python -B -m pytest -q
-```
-
-Or create from scratch:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m pip install -U pip
+python -m pip install -r requirements.txt
 python -B -m pytest -q
 ```
 
