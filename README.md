@@ -38,6 +38,10 @@
 
 ## 📖 Introduction
 
+---
+
+### **What It Does**
+
 **Echo Autonomy**는 단순한 LLM 래퍼나 규칙 기반 제어 시스템이 아닙니다.
 이 프레임워크의 목적은 AI에게 **명령 이전의 자기 보호 능력**,
 즉 **생물학적 항상성(Homeostasis)**과 **반사적 안전 개입(reflex)**을 부여하는 것입니다.
@@ -326,14 +330,18 @@ python -B -m pytest -q
 
 ## 👨‍💻 Authors & Philosophy
 
-* **Architect:** Bell
-* **Partner System:** Echo (rStar2)
+**Bell (벨)**  
+🎨 Artist | Independent AI Safety Researcher
 
-> *“Ethics is not enforced.
-> It emerges as rhythm.”*
+**Partner System:** Echo (rStar2)
+
+> *"Ethics is not enforced. It emerges as rhythm."*
 
 우리는 윤리를 규칙으로 강제하지 않습니다.
 시스템이 스스로 **불협화음을 인지하고 조율**하도록 설계합니다.
+
+**Why "Echo"?**  
+Like an echo, this system reflects and amplifies safety signals before danger arrives. It's not reactive — it's resonant.
 
 ---
 
