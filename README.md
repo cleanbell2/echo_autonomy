@@ -38,6 +38,17 @@
 
 ## 📖 Introduction
 
+### **Why This Exists**
+
+> *"When my children started using AI for homework, I watched them trust answers that were confidently wrong. As an artist and mother, I knew I had to do something."*  
+> — Bell
+
+**Echo Autonomy** was born from a parent's need to protect their children, not academic curiosity.
+
+---
+
+### **What It Does**
+
 **Echo Autonomy**는 단순한 LLM 래퍼나 규칙 기반 제어 시스템이 아닙니다.
 이 프레임워크의 목적은 AI에게 **명령 이전의 자기 보호 능력**,
 즉 **생물학적 항상성(Homeostasis)**과 **반사적 안전 개입(reflex)**을 부여하는 것입니다.
@@ -326,14 +337,22 @@ python -B -m pytest -q
 
 ## 👨‍💻 Authors & Philosophy
 
-* **Architect:** Bell
-* **Partner System:** Echo (rStar2)
+**Bell (벨)**  
+🎨 Artist & Mother | Independent AI Safety Researcher
 
-> *“Ethics is not enforced.
-> It emerges as rhythm.”*
+*I'm not a computer scientist. I'm an artist and a mom who got worried when my children started trusting AI that gave them wrong answers. So I learned to code, studied cognitive science, and built this — to protect them.*
+
+**Partner System:** Echo (rStar2)
+
+> *"Ethics is not enforced. It emerges as rhythm."*
 
 우리는 윤리를 규칙으로 강제하지 않습니다.
 시스템이 스스로 **불협화음을 인지하고 조율**하도록 설계합니다.
+
+**Why "Echo"?**  
+Like an echo, this system reflects and amplifies safety signals before danger arrives. It's not reactive — it's resonant.
+
+**내 아이들을 지키기 위해 만들었습니다.**
 
 ---
 
