@@ -185,9 +185,13 @@ pip install -r requirements.txt
 
 ### Quickstart
 
-```powershell
-.\.venv-1\Scripts\Activate.ps1
+```bash
+# Clone and install
+git clone https://github.com/cleanbell2/echo_autonomy.git
+cd echo_autonomy
 pip install -r requirements.txt
+
+# Run tests
 python -B -m pytest -q
 ```
 
@@ -197,6 +201,8 @@ python -B -m pytest -q
 python -m pytest test_bcdsi.py
 # 53 passed, 1 skipped
 ```
+
+---
 
 ## ✅ Test Status (Release Check)
 
@@ -209,6 +215,24 @@ python -B -m pytest -q
 Expected result: `53 passed, 1 skipped` (≈ 6–8s)
 
 Note: `-B` prevents stale `__pycache__` artifacts and helps keep imports deterministic in local/CI runs.
+
+### Quickstart (Windows / Python 3.13)
+
+If you already have a virtual environment set up:
+
+```powershell
+.\.venv-1\Scripts\Activate.ps1
+python -B -m pytest -q
+```
+
+Or create from scratch:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -B -m pytest -q
+```
 
 ---
 
