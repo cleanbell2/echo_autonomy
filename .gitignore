@@ -64,3 +64,17 @@ echo_status.json
 *.bak
 *.backup
 *.old
+
+# Sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+.env.production
+.env.local
+
+# Personal notes
+PRIVATE_NOTES.md
+TODO_PRIVATE.md
