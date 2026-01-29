@@ -1,5 +1,7 @@
 # **BCDSI is a reflex, not a command.**
 
+![Tests](https://github.com/cleanbell2/echo_autonomy/actions/workflows/tests.yml/badge.svg)
+
 **BCDSI (Brain–Computer Divergence Safety Intervention)** is a real-time safety intervention mechanism that autonomously detects and regulates cognitive divergence in AI systems to preserve systemic stability and survival prior to external control.
 
 > **BCDSI does not wait to be called.
@@ -407,3 +409,16 @@ python -m venv .venv
 pip install -r requirements.txt
 python -B -m pytest -q
 ```
+
+## Support
+
+- **OS:** Windows (PowerShell), macOS, Linux
+- **Python:** 3.13+
+- **Quick check:** `python -B -m pytest -q`
+
+## Known limitations
+
+- **1 skipped is expected** in the minimal release build:
+  - Some optional/compatibility components are intentionally excluded.
+  - Run `python -B -m pytest -q` after installing full dependencies if you want the full suite.
+
