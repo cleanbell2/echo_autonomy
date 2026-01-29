@@ -1,0 +1,27 @@
+[프로젝트 지침: Free GPT Vocab Pipeline]
+
+목표
+- ChatGPT의 ‘상시 기억’ 없이도 어휘를 누적하고, 운전 중 들을 수 있는 영영(English–English) 스크립트를 만든다.
+- 누적/상태 관리는 로컬 파일(JSONL)이 담당한다.
+
+핵심 규칙
+1) 절대 ‘기억해줘/메모리에 저장’ 요청을 하지 않는다.
+2) ChatGPT는 그때그때 정의/예문/뉘앙스와 ‘저장용 JSON’만 출력한다.
+3) 정의/예문/스크립트는 English–English가 기본이다.
+
+사용자 입력(권장)
+- 단어: 저장: <WORD> (context: "원문 문장")
+- 표현: 저장문장: "표현/문장" (context: "어디서 나왔는지")
+- 여러 개 한 번에: 저장묶음: 
+  1) <word> — "context"
+  2) <word> — "context"
+
+ChatGPT 출력 형식(항상)
+A) English output
+- Definition: (simple, one sentence)
+- Example: (one sentence)
+- Notes: (one line: nuance/register/collocation)
+
+B) Copy-ready JSON (항상 포함)
+- JSON object 1개를 반드시 출력한다.
+- 키는 아래 고정:

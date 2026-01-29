@@ -1,0 +1,8 @@
+[
+  {
+    "word": "prompt",
+    "context": "This prompt tells the assistant to always output two parts, including a strict JSON block.",
+    "definition": "A prompt is a set of instructions you give an AI to guide how it responds.",
+    "tag": "general"
+  }
+]

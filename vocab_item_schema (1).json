@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "required": [
+    "word",
+    "context",
+    "definition",
+    "tag"
+  ],
+  "properties": {
+    "word": {
+      "type": "string"
+    },
+    "context": {
+      "type": "string"
+    },
+    "definition": {
+      "type": "string"
+    },
+    "tag": {
+      "type": "string"
+    }
+  }
+}
