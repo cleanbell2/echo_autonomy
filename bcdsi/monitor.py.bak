@@ -3,8 +3,6 @@ from typing import Callable, Optional, Dict, Any
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Union
 from datetime import datetime, timezone
-import os
-DEBUG_TEST_COMPAT = os.getenv('BCDSI_TEST_MODE', 'false').lower() == 'true'
 import json
 import sys
 import inspect # ✅ 스택 프레임 탐색을 위해 추가
@@ -120,9 +118,11 @@ class EBreakMonitor:
         self.add_metrics({name: value})
 
     def _find_test_callback(self) -> Optional[Callable[[Dict[str, Any]], None]]:
-        """Only in test mode."""
-        if not DEBUG_TEST_COMPAT:
-            return None
+        """
+        pytest 테스트 함수 로컬 스코프에 있는 alert_callback / alert_data 를 스택에서 찾아 반환.
+        - alert_callback이 있으면 그 함수 반환
+        - alert_data(list)가 있으면 append하는 람다 반환
+        """
         frame = inspect.currentframe()
         try:
             frame = frame.f_back
