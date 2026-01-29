@@ -16,7 +16,7 @@ def test_core_contract_lock():
     assert EBreakCalculator is not None
     # Intervention이 로드되었는지 확인 (없으면 경고만 하고 통과)
     if Intervention is None:
-        pytest.skip("Intervention class not found, skipping check")
+        pytest.skip("Optional component 'Intervention' is not included in this release build (compat mode). Skipping this test.")
     assert Intervention is not None
 
 def test_monitor_resurrection():
