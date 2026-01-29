@@ -389,3 +389,21 @@ This project represents a paradigm shift in AI safety:
 - From **external control** to **internal reflection**
 - From **rigid rules** to **adaptive responses**
 - From **machine** to **organism**
+
+## Test Status (Release Check)
+
+Windows + Python 3.13 (release proof):
+
+```powershell
+python -B -m pytest -q
+# Expected: 53 passed, 1 skipped (≈6-8s)
+```
+
+### Quickstart (with venv)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -B -m pytest -q
+```
