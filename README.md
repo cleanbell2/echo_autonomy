@@ -16,7 +16,7 @@
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-53%20passed-brightgreen.svg)](https://github.com/cleanbell2/echo_autonomy)
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
@@ -358,8 +358,9 @@ Like an echo, this system reflects and amplifies safety signals before danger ar
 
 ## 📜 License
 
-This project is proprietary software designed by Bell & Echo.
-All rights reserved.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2026 Echo Autonomy Project
 
 ---
 
