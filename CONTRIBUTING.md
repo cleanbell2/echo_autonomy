@@ -98,4 +98,13 @@ BCDSI_TEST_MODE=false pytest -v
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the **Apache License 2.0**.
+
+### Important Notes:
+
+1. **Patent Grant**: Your contributions include a patent license grant as specified in the Apache License 2.0
+2. **Copyright**: Copyright remains with you, but you grant a license to the project
+3. **NOTICE File**: Significant contributions may be acknowledged in the NOTICE file
+4. **Trademark**: You may not use "BCDSI" or "Echo Autonomy" trademarks without permission
+
+For full details, see [LICENSE](LICENSE) and [NOTICE](NOTICE) files.
