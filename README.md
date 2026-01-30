@@ -302,6 +302,8 @@ For security vulnerabilities, email: cleanbell2222@gmail.com
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
+By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 **Quick start:**
 
 1. **Fork the repository**
