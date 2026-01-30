@@ -217,37 +217,6 @@ python -m pytest test_bcdsi.py
 
 ---
 
-## ✅ Test Status (Release Check)
-
-Validated on Windows + Python 3.13 with a clean test run:
-
-```powershell
-python -B -m pytest -q
-```
-
-Expected result: `53 passed, 1 skipped` (≈ 6–8s)
-
-Note: `-B` prevents stale `__pycache__` artifacts and helps keep imports deterministic in local/CI runs.
-
-### Quickstart (Windows / Python 3.13)
-
-```powershell
-py -3.13 -m venv .venv-1
-.\.venv-1\Scripts\Activate.ps1
-python -m pip install -U pip
-python -m pip install -r requirements.txt
-python -B -m pytest -q
-```
-
----
-
-## 🛠 Usage Example
-
-```python
-from bcdsi import EBreakMonitor, DynamicThreshold, intervene
-
-# Initialize reflex system
-threshold = DynamicThreshold(base_threshold=0.1)
 monitor = EBreakMonitor(threshold_system=threshold)
 
 # Start monitoring
