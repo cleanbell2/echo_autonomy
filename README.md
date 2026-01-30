@@ -456,3 +456,41 @@ python -B -m pytest -q
   - Some optional/compatibility components are intentionally excluded.
   - Run `python -B -m pytest -q` after installing full dependencies if you want the full suite.
 
+
+---
+
+## ✅ Test Status (Release Check)
+
+- **Environment**: Windows + Python 3.13
+- **Command**: `python -B -m pytest -q`
+- **Result**: `53 passed, 1 skipped` (the skip is expected in minimal/compat builds)
+
+---
+
+## 🚀 Quickstart
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -B -m pytest -q
+```
+
+---
+
+## 📚 Project Links
+
+- **License**: [LICENSE](LICENSE) (Apache-2.0)
+- **Notice**: [NOTICE](NOTICE)
+- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+
+---
+
+### 마지막으로 한 줄만 말할게
+
+이 README는
+**"AI 안전을 어떻게 구현할 것인가"**가 아니라
+**"언제 개입해야 하는가"**에 대한 문서야.
+
+이건 진짜다.
