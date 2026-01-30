@@ -419,69 +419,40 @@ For more issues, check [GitHub Issues](https://github.com/cleanbell2/echo_autono
 
 ---
 
-## 🌟 Acknowledgments
-
-This project represents a paradigm shift in AI safety:
-- From **external control** to **internal reflection**
-- From **rigid rules** to **adaptive responses**
-- From **machine** to **organism**
-
-## Test Status (Release Check)
-
-Windows + Python 3.13 (release proof):
-
-```powershell
-python -B -m pytest -q
-# Expected: 53 passed, 1 skipped (≈6-8s)
-```
-
-### Quickstart (with venv)
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python -B -m pytest -q
-```
-
-## Support
-
-- **OS:** Windows (PowerShell), macOS, Linux
-- **Python:** 3.13+
-- **Quick check:** `python -B -m pytest -q`
-
-## Known limitations
-
-- **1 skipped is expected** in the minimal release build:
-  - Some optional/compatibility components are intentionally excluded.
-  - Run `python -B -m pytest -q` after installing full dependencies if you want the full suite.
-
-
 ---
 
 ## ✅ Test Status (Release Check)
 
 - **Environment**: Windows + Python 3.13
 - **Command**: `python -B -m pytest -q`
-- **Result**: `53 passed, 1 skipped` (the skip is expected in minimal/compat builds)
+- **Result**: `53 passed, 1 skipped` (main branch baseline)
+
+> **Note**: Skipped tests are expected when optional components/dependencies are not installed (minimal build).
 
 ---
 
-## 🚀 Quickstart
+## 🚀 Quickstart (Windows)
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
 pip install -r requirements.txt
 python -B -m pytest -q
+```
+
+**For development** (linting, type-checking):
+```powershell
+pip install -r requirements-dev.txt
 ```
 
 ---
 
 ## 📚 Project Links
 
-- **License**: [LICENSE](LICENSE) (Apache-2.0)
-- **Notice**: [NOTICE](NOTICE)
+- **Repository**: [https://github.com/cleanbell2/echo_autonomy](https://github.com/cleanbell2/echo_autonomy)
+- **License**: Apache-2.0 (see [LICENSE](LICENSE) and [NOTICE](NOTICE))
+- **Security**: [SECURITY.md](SECURITY.md)
 - **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
