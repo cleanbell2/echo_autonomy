@@ -300,7 +300,9 @@ For security vulnerabilities, email: cleanbell2222@gmail.com
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+**Quick start:**
 
 1. **Fork the repository**
 2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
