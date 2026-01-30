@@ -1,9 +1,10 @@
-# Core dependencies
+# Echo Autonomy - Runtime Dependencies
+# Minimal dependencies for library usage
+# For development: pip install -r requirements-dev.txt
+
+# Core numerical libraries
 numpy>=1.26.4
 scipy>=1.13.1
-
-# Testing
-pytest>=8.3.5
 
 # Environment configuration
 python-dotenv>=1.0.0
