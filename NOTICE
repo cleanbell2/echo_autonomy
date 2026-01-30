@@ -1,0 +1,87 @@
+Echo Autonomy Project
+Copyright 2026 Echo Autonomy Project
+
+This product includes software developed by the Echo Autonomy Project.
+
+===============================================================================
+
+## Core Components
+
+### BCDSI (Brain-Computer Divergence Safety Intervention)
+Copyright 2026 Bell & Echo
+- Designed by: Bell (System Architect)
+- Research Partner: Echo (rStar2 AI System)
+
+### Quantum Uncertainty Calculator
+Copyright 2026 Echo Autonomy Project
+- Location: q_quantum/quantum/uncertainty.py
+- Formula: Q_uncertainty = w_S·Ŝ + w_P·(1-P) + w_D·D
+
+### E-Break Monitoring System
+Copyright 2026 Echo Autonomy Project
+- Location: bcdsi/monitor.py
+- Real-time cognitive divergence detection
+
+===============================================================================
+
+## Trademarks
+
+"BCDSI", "Echo Autonomy", and "Brain-Computer Divergence Safety Intervention" 
+are trademarks of the Echo Autonomy Project.
+
+Use of these trademarks requires explicit permission except as needed for 
+reasonable and customary use in describing the origin of the Work.
+
+===============================================================================
+
+## Third-Party Dependencies
+
+This software uses the following open-source packages:
+
+- pytest (MIT License)
+  Copyright (c) 2004-2024 Holger Krekel and others
+  https://github.com/pytest-dev/pytest
+
+- numpy (BSD License)
+  Copyright (c) 2005-2024 NumPy Developers
+  https://numpy.org/
+
+- anyio (MIT License)
+  Copyright (c) 2018 Alex Grönholm
+  https://github.com/agronholm/anyio
+
+===============================================================================
+
+## Patent Notice
+
+This software may include inventions that are subject to patent applications.
+
+Patent claims related to:
+1. Quantum-based uncertainty measurement for AI systems
+2. Real-time cognitive divergence detection algorithms
+3. Bio-mimetic nervous system for autonomous AI safety
+
+By using this software under the Apache License 2.0, you receive a patent 
+license from the contributors as specified in Section 3 of the license.
+
+===============================================================================
+
+## Contact
+
+Project Maintainer: Bell
+Email: cleanbell2222@gmail.com
+Repository: https://github.com/cleanbell2/echo_autonomy
+
+===============================================================================
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

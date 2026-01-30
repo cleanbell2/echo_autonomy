@@ -16,7 +16,7 @@
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-53%20passed-brightgreen.svg)](https://github.com/cleanbell2/echo_autonomy)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
@@ -362,7 +362,17 @@ Like an echo, this system reflects and amplifies safety signals before danger ar
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+
+### Key License Features:
+
+✅ **Commercial Use Allowed**: You can use this software for commercial purposes  
+✅ **Patent Protection**: Explicit patent grants protect both contributors and users  
+✅ **Trademark Protection**: "BCDSI" and "Echo Autonomy" are protected trademarks  
+✅ **Modification Allowed**: You can modify and distribute derivative works  
+✅ **Attribution Required**: You must include the NOTICE file in distributions  
+
+See [NOTICE](NOTICE) file for detailed attribution and patent information.
 
 Copyright (c) 2026 Echo Autonomy Project
 
