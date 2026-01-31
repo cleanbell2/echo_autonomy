@@ -25,6 +25,7 @@
 - [Introduction](#-introduction)
 - [Core Philosophy](#-core-philosophy)
 - [Architecture](#-architecture)
+- [🌐 Echo Gateway (Action Agent)](#-echo-gateway-action-agent)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
 - [Usage Examples](#-usage-example)
@@ -33,6 +34,7 @@
 - [Contributing](#-contributing)
 - [Authors](#-authors--philosophy)
 - [License](#-license)
+- [Acknowledgments](#-acknowledgments)
 
 ---
 
@@ -149,6 +151,95 @@ BCDSI의 **감각 기관(Sensory Layer)**입니다.
     **관측 가능한 지점을 최대한 활용**하도록 설계되었습니다.
 * 단순 로그가 아니라,
     **세션 단위의 이상 징후(anomaly)**를 추적합니다.
+
+---
+
+## 🌐 Echo Gateway (Action Agent)
+
+**Status**: 🚧 Design Phase (Week 1)  
+**Architecture Document**: [docs/GATEWAY_MIGRATION_PLAN.md](docs/GATEWAY_MIGRATION_PLAN.md)
+
+Echo Gateway is an **orchestration layer** that combines OpenClaw's Gateway pattern with Echo's safety layer to build a production-grade AI Action Agent.
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **WebSocket RPC** | Real-time bi-directional communication |
+| **Session Management** | Isolated conversation state with auto-compaction |
+| **Multi-Key Failover** | Automatic LLM provider failover on rate limits |
+| **Tool Execution** | Safe Bash/Read/Write/Grep tools with BCDSI validation |
+| **Safety Layer** | Pre/post-execution validation using BCDSI + E-Break |
+| **Streaming Support** | Real-time agent responses via WebSocket |
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────┐
+│               Echo Gateway (Python)              │
+│  ┌──────────────┐  ┌────────────┐  ┌─────────┐ │
+│  │   WebSocket  │  │  Session   │  │  Auth   │ │
+│  │   Handler    │  │  Manager   │  │ Profiles│ │
+│  └──────────────┘  └────────────┘  └─────────┘ │
+│                                                  │
+│  ┌──────────────┐  ┌────────────┐  ┌─────────┐ │
+│  │    Agent     │  │    Tool    │  │ Safety  │ │
+│  │   Executor   │  │  Registry  │  │Validator│ │
+│  └──────────────┘  └────────────┘  └─────────┘ │
+│                                                  │
+│  ┌────────────────────────────────────────────┐ │
+│  │       BCDSI Safety Layer (Existing)        │ │
+│  │  - Quantum Uncertainty Calculator          │ │
+│  │  - E-Break Calculator                      │ │
+│  │  - Intervention Engine (5 levels)          │ │
+│  └────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+                      │
+                      ▼
+         ┌────────────────────────────┐
+         │   LLM Providers (Claude,   │
+         │   GPT, Gemini, Ollama...)  │
+         └────────────────────────────┘
+```
+
+### Differentiation vs OpenClaw
+
+| Feature | OpenClaw | Echo Gateway |
+|---------|----------|--------------|
+| **Safety Layer** | ❌ None | ✅ BCDSI + Quantum Uncertainty |
+| **Intervention** | ❌ None | ✅ 5 levels (BLOCK/MODIFY/MONITOR/WARNING/ALLOW) |
+| **Mathematical Foundation** | ❌ None | ✅ Shannon Entropy, Purity, JSD Distance |
+| **Hallucination Detection** | ❌ None | ✅ Cognitive divergence via uncertainty |
+| **Context Overflow** | ✅ Auto-compaction | ✅ Auto-compaction + Safety check |
+| **Auth Failover** | ✅ Multi-key | ✅ Multi-key (same pattern) |
+| **Target Use Case** | Personal assistant | Production-grade safe AI agent |
+
+### Implementation Roadmap
+
+- **Phase 1** (Week 1-2): Protocol Layer (Pydantic schemas + RPC validator)
+- **Phase 2** (Week 3-4): Gateway Server (WebSocket + Session management)
+- **Phase 3** (Week 5-6): Agent Executor (LLM integration + BCDSI validation)
+- **Phase 4** (Week 7-8): Auth Profile Failover (Multi-key management)
+- **Phase 5** (Week 9-10): Tool Registry & Plugins (Bash/Read/Write/Grep)
+- **Phase 6** (Week 11-12): Integration & Testing (E2E validation + benchmarks)
+
+**ETA for MVP**: 12 weeks (Q2 2026)
+
+### Quick Start (Coming Soon)
+
+```bash
+# Install Echo Gateway
+pip install echo-gateway
+
+# Start Gateway server
+echo-gateway start --port 18789
+
+# Connect via WebSocket
+wscat -c ws://localhost:18789/gateway
+
+# Send agent request
+{"id": 1, "method": "agent.run", "params": {"message": "Hello, safe AI!"}}
+```
 
 ---
 
@@ -344,6 +435,29 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 See [NOTICE](NOTICE) file for detailed attribution and patent information.
 
 Copyright (c) 2026 Echo Autonomy Project
+
+---
+
+## 🙏 Acknowledgments
+
+### Inspiration
+
+Echo Gateway's architecture is inspired by [OpenClaw](https://github.com/openclaw/openclaw)'s Gateway pattern. OpenClaw is an MIT-licensed personal AI assistant that pioneered the Gateway-Bridge-Session architecture for AI orchestration. Echo Gateway reimplements these patterns independently in Python with no source code copying. We thank the OpenClaw team for their open-source contributions to the AI agent ecosystem.
+
+**Key Differences**:
+- **Focus**: OpenClaw targets personal productivity and multi-channel messaging; Echo Autonomy targets production-grade safety with BCDSI intervention
+- **License**: OpenClaw is MIT licensed; Echo Autonomy is Apache 2.0 (includes patent grant provisions)
+- **Implementation**: Independent Python reimplementation with unique BCDSI safety layer
+- **Safety**: Echo Gateway adds mathematical safety validation (Quantum Uncertainty + E-Break)
+
+### References
+
+- [OpenClaw](https://github.com/openclaw/openclaw) - Personal AI assistant with Gateway pattern
+- [OpenCode](https://github.com/anomalyco/opencode) - Open source AI coding agent
+- [Claude Agent SDK](https://docs.anthropic.com/en/docs/claude-agent-sdk) - Anthropic's agent framework
+- [Composio Tool Router](https://docs.composio.dev/tool-router) - Tool integration platform
+
+---
 
 ---
 
