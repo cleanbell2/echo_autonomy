@@ -1,0 +1,32 @@
+# GitHub Actions Workflow Template
+# To use: Copy this file to .github/workflows/tests.yml via GitHub web interface
+
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+    
+    - name: Run tests
+      run: |
+        pytest -v --cov=bcdsi --cov=q_quantum
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      if: success()

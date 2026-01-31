@@ -1,0 +1,50 @@
+{
+  "policy": {
+    "cooldown_seconds": 1800,
+    "prefer_last_success": true
+  },
+  "providers": {
+    "openai": {
+      "profiles": [
+        {
+          "id": "openai-primary",
+          "api_key": "ENV:OPENAI_API_KEY",
+          "priority": 100
+        },
+        {
+          "id": "openai-fallback-1",
+          "api_key": "ENV:OPENAI_API_KEY_2",
+          "priority": 90
+        },
+        {
+          "id": "openai-fallback-2",
+          "api_key": "ENV:OPENAI_API_KEY_3",
+          "priority": 80
+        }
+      ]
+    },
+    "anthropic": {
+      "profiles": [
+        {
+          "id": "anthropic-primary",
+          "api_key": "ENV:ANTHROPIC_API_KEY",
+          "priority": 100
+        },
+        {
+          "id": "anthropic-fallback",
+          "api_key": "ENV:ANTHROPIC_API_KEY_2",
+          "priority": 90
+        }
+      ]
+    },
+    "google": {
+      "profiles": [
+        {
+          "id": "google-primary",
+          "api_key": "ENV:GOOGLE_API_KEY",
+          "priority": 100
+        }
+      ]
+    }
+  }
+}
