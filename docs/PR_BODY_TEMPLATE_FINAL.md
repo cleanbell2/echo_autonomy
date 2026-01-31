@@ -6,37 +6,33 @@
 
 ## ✅ Echo Gateway Phase 2 — Ready to Merge
 
-### What's included
-- ✅ **Auth Profile Failover** (multi-key, cooldown, last-success preference)
-- ✅ **Tool Sandbox** (path traversal defense, workspace isolation, symlink handling)
-- ✅ **BCDSI Middleware** (local/http adapter, 5-level intervention, fail-closed for tools)
-- ✅ **Integration Tests** (Phase 2: 5/5 passing locally)
-- ✅ **Docs** (design plan + patches + checklists + reports)
+### Summary
+This PR adds Phase 2 safety patches and supporting docs for Echo Gateway (OpenClaw-inspired architecture, independently reimplemented).
 
-### Why this matters
-This PR ports the **Gateway orchestration pattern** (OpenClaw-inspired) into a minimal, security-first Python runtime, and integrates **Echo Autonomy's BCDSI safety layer** as a first-class middleware.
+**Included**
+- ✅ Auth Profiles: multi-key failover + cooldown (ENV-only key references)
+- ✅ Tool Sandbox: path traversal defense + workspace isolation (symlink handling included)
+- ✅ BCDSI Middleware: pluggable adapter (local/http), 5-level intervention
+- ✅ Integration tests: Phase 2 coverage (auth/sandbox/bcdsi + fail-closed behavior)
+- ✅ Documentation: migration plan, patch guide, merge checklist, status reports
 
-### CI / Testing policy
-- ✅ **No `|| true`** — failures are not suppressed (no hidden test failures).
-- ✅ E2E tests are designed to **skip gracefully** when server endpoints are not available yet (until Phase 3/4), using internal `pytest.skip()` rather than shell suppression.
+### Security Notes
+- **No plaintext secrets**: config uses `ENV:` references only
+- **Fail-closed default for tools**: if safety engine is unavailable, tool execution is blocked (safer default)
+- **Path traversal defense**: normalized/validated paths; suspicious paths rejected
 
-### Verification (local)
-```bash
-pytest tests/test_gateway_integration.py -v
-pytest tests/test_e2e.py -v
-```
+### Tests
+- Integration tests are expected to pass locally and in CI.
+- E2E tests are designed to **skip gracefully** when the server endpoints are not available yet (until the relevant phase), using **internal `pytest.skip()`**.
 
-### Security notes
-- **No plaintext secrets** in repo: keys referenced via `ENV:` only (config uses ENV indirection).
-- **Fail-closed default for tool execution** when safety engine is missing/unreachable.
-- **Sandbox isolation** prevents workspace escape (path traversal + optional symlink hardening).
+### CI Policy (Decision: no `|| true`)
+- ✅ **No `|| true`**: failures are not suppressed
+- ✅ E2E "no server yet" is handled via **pytest skip**, not shell suppression
 
-### License & attribution
-- Inspired by the Gateway pattern from **OpenClaw (MIT)**.
-- Independent Python reimplementation (no source code copying).
-- Echo Autonomy codebase remains **Apache 2.0** compatible.
+### Merge Recommendation
+- ✅ **Squash & merge** recommended (keeps history clean)
+- No breaking changes intended (additive patches + docs)
 
-### Merge recommendation
-✅ **Squash & merge** is recommended to keep main history clean.
-
-**Tags**: `echo_gateway`, `phase2`, `ci`, `no-true`, `ready-to-merge`
+### References / Attribution
+- Inspired by OpenClaw Gateway pattern (MIT).  
+- This is an independent Python implementation (no source code copying).
