@@ -152,9 +152,12 @@ Echo's `server.py` (FastAPI) provides:
 
 - **Backend**: Python 3.10+
 - **Framework**: FastAPI (existing)
-- **WebSocket**: `websockets` library
+- **WebSocket**: `websockets` library or FastAPI WebSocket (ASGI-native)
+  - **Selection criteria**: `websockets` for standalone, FastAPI WebSocket for unified ASGI flow
 - **Validation**: Pydantic v2
-- **Session Storage**: Redis (or SQLite for prototype)
+- **Session Storage**: 
+  - **Prototype**: SQLite (single-node, zero-config, portability)
+  - **Production**: Redis (concurrency, TTL, multi-instance, session distribution)
 - **Agent Execution**: `asyncio` + `httpx` (for LLM calls)
 - **Safety Layer**: Existing BCDSI modules (no changes needed)
 
@@ -169,15 +172,43 @@ Echo's `server.py` (FastAPI) provides:
 **Tasks**:
 1. Create `echo_gateway/protocol/` directory
 2. Define Pydantic schemas for:
-   - `RequestFrame`, `ResponseFrame`, `EventFrame`
-   - Core methods: `agent.run`, `agent.stop`, `session.list`, `session.reset`
-3. Implement JSON-RPC validator using Pydantic
-4. Write unit tests for protocol serialization/deserialization
+   - **Message Envelope**: `type`, `request_id`, `session_id`, `timestamp`, `payload`, `error`
+   - **RequestFrame**: Client → Server messages
+   - **ResponseFrame**: Server → Client responses
+   - **EventFrame**: Server → Client push notifications
+   - **Error Schema**: Structured error responses
+3. Define core method types:
+   - **Agent operations**: `agent.run`, `agent.stop`, `agent.status`
+   - **Session operations**: `session.list`, `session.reset`, `session.compact`
+   - **Tool operations**: `tool.execute`, `tool.list`
+4. Implement JSON-RPC validator:
+   - Message type whitelist
+   - Payload validation per type
+   - Size limits (max 10MB per message)
+5. Write unit tests:
+   - Protocol roundtrip (serialize/deserialize)
+   - Invalid type rejection
+   - Oversized payload rejection
 
 **Deliverables**:
-- `echo_gateway/protocol/schemas.py`
-- `echo_gateway/protocol/validator.py`
-- `tests/test_protocol.py`
+- `echo_gateway/protocol/envelope.py` - Common message envelope
+- `echo_gateway/protocol/schemas.py` - Frame schemas
+- `echo_gateway/protocol/validator.py` - Validation logic
+- `tests/test_protocol_roundtrip.py` - Unit tests
+
+**Example Envelope**:
+```python
+{
+  "type": "request",
+  "request_id": "req_12345",
+  "session_id": "session_001",
+  "timestamp": 1706745600.123,
+  "payload": {
+    "method": "agent.run",
+    "params": {"message": "Hello"}
+  }
+}
+```
 
 ---
 
@@ -322,7 +353,7 @@ OpenClaw is **MIT licensed** (confirmed in `/tmp/openclaw/LICENSE`).
 
 ### 5.2 Echo Autonomy License
 
-Echo Autonomy is **Apache 2.0** with **3 patent claims** (in `NOTICE` file).
+Echo Autonomy is **Apache 2.0** (includes patent grant provisions as defined in the Apache 2.0 License).
 
 **Strategy**:
 - Keep Echo's Apache 2.0 license
@@ -331,10 +362,12 @@ Echo Autonomy is **Apache 2.0** with **3 patent claims** (in `NOTICE` file).
   ## Acknowledgments
   
   Echo Gateway's architecture is inspired by [OpenClaw](https://github.com/openclaw/openclaw)'s 
-  Gateway pattern. OpenClaw is MIT licensed and developed by [OpenClaw contributors].
+  Gateway pattern. OpenClaw is MIT licensed. Echo Gateway reimplements these patterns 
+  independently in Python with no source code copying.
   ```
 - Document design decisions in `docs/ARCHITECTURE.md`
-- No patent concerns (different tech: Python vs Node.js, Safety layer is unique to Echo)
+- No license conflicts: MIT (OpenClaw) → Apache 2.0 (Echo) is compatible
+- Different implementation: Python vs Node.js, plus unique BCDSI safety layer
 
 ### 5.3 Dependency Licenses
 
@@ -369,25 +402,35 @@ All Python dependencies must be compatible with Apache 2.0:
 - **OpenClaw**: Personal AI assistant (productivity, automation)
 - **Echo Gateway**: Production-grade safe AI agent (enterprise, critical systems)
 
-**Positioning**: "Echo Gateway = OpenClaw's orchestration + Military-grade safety"
+**Positioning**: Echo Gateway combines OpenClaw's orchestration patterns with production-grade safety validation through BCDSI
 
 ---
 
-## 7. Success Metrics
+## 7. Success Metrics (Target Goals)
 
-### 7.1 Technical Metrics
+### 7.1 Technical Targets
 
-- **Latency**: WebSocket RTT < 50ms, Agent execution < 2s (95th percentile)
-- **Throughput**: 100+ concurrent sessions, 1000+ msg/sec
-- **Safety**: 99%+ hallucination detection rate (benchmark vs OpenClaw)
-- **Availability**: 99.9% uptime with failover
+**Performance Goals**:
+- **Latency**: WebSocket RTT < 50ms (target), Agent execution < 2s at 95th percentile
+- **Throughput**: 100+ concurrent sessions, 1000+ msg/sec (target)
+- **Availability**: 99.9% uptime with failover (production target)
 
-### 7.2 Adoption Metrics
+**Safety Goals**:
+- **Hallucination Detection**: 99%+ detection rate (target)
+  - Measured using **Echo Autonomy Benchmark** (internal test suite)
+  - Baseline: cognitive divergence scenarios from existing BCDSI test corpus
+  - Future: Public benchmark suite with labeled datasets
+- **False Positive Rate**: < 5% (target, to be validated in Phase 6)
+- **Intervention Accuracy**: 95%+ correct level assignment (target)
 
-- **GitHub Stars**: Target 1000+ in 6 months
-- **Docker Pulls**: Target 10K+ in 6 months
-- **Contributors**: Target 10+ active contributors
-- **ArXiv Citations**: Target 50+ citations in 1 year
+### 7.2 Adoption Targets
+
+- **GitHub Stars**: 1000+ in 6 months (target)
+- **Docker Pulls**: 10K+ in 6 months (target)
+- **Contributors**: 10+ active contributors (target)
+- **ArXiv Citations**: 50+ citations in 1 year (target)
+
+**Note**: All metrics are aspirational targets based on project goals, not guarantees.
 
 ---
 

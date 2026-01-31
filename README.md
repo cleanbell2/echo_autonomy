@@ -442,13 +442,13 @@ Copyright (c) 2026 Echo Autonomy Project
 
 ### Inspiration
 
-Echo Gateway's architecture is inspired by [OpenClaw](https://github.com/openclaw/openclaw)'s Gateway pattern. OpenClaw is an MIT-licensed personal AI assistant that pioneered the Gateway-Bridge-Session architecture for AI orchestration. We thank the OpenClaw team for their open-source contributions to the AI agent ecosystem.
+Echo Gateway's architecture is inspired by [OpenClaw](https://github.com/openclaw/openclaw)'s Gateway pattern. OpenClaw is an MIT-licensed personal AI assistant that pioneered the Gateway-Bridge-Session architecture for AI orchestration. Echo Gateway reimplements these patterns independently in Python with no source code copying. We thank the OpenClaw team for their open-source contributions to the AI agent ecosystem.
 
 **Key Differences**:
-- OpenClaw focuses on personal productivity and multi-channel messaging
-- Echo Autonomy focuses on production-grade safety with BCDSI intervention
-- OpenClaw is MIT licensed; Echo Autonomy is Apache 2.0 with patent protection
-- Echo Gateway adds a mathematical safety layer (Quantum Uncertainty + E-Break)
+- **Focus**: OpenClaw targets personal productivity and multi-channel messaging; Echo Autonomy targets production-grade safety with BCDSI intervention
+- **License**: OpenClaw is MIT licensed; Echo Autonomy is Apache 2.0 (includes patent grant provisions)
+- **Implementation**: Independent Python reimplementation with unique BCDSI safety layer
+- **Safety**: Echo Gateway adds mathematical safety validation (Quantum Uncertainty + E-Break)
 
 ### References
 
