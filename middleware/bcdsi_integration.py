@@ -196,11 +196,22 @@ class BCDSIMiddleware:
             BCDSIClientError: If engine call fails
         """
         if not self.local_engine:
-            # Default safe behavior: allow with unknown metrics
-            return SafetyDecision(
-                level="ALLOW",
-                metrics={"e_break": 0.0, "theta_integrity": 1.0, "q_uncertainty": 0.0},
-            )
+            # Fail-closed: Block if engine not configured (safety-first)
+            # For tool operations, default to BLOCK
+            # For inbound checks, default to WARNING (allow read, block writes)
+            stage = payload.get("stage", "unknown")
+            if stage == "tool":
+                return SafetyDecision(
+                    level="BLOCK",
+                    reason="BCDSI engine not configured (fail-closed)",
+                    metrics={"e_break": 1.0, "theta_integrity": 0.0, "q_uncertainty": 1.0},
+                )
+            else:
+                return SafetyDecision(
+                    level="WARNING",
+                    reason="BCDSI engine not configured (monitoring only)",
+                    metrics={"e_break": 0.5, "theta_integrity": 0.5, "q_uncertainty": 0.5},
+                )
 
         try:
             out = self.local_engine.check(payload)  # Expected: dict
