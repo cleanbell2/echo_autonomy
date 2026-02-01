@@ -42,19 +42,21 @@ class Envelope:
             signature=data.get("signature")
         )
     
-    def validate(self) -> bool:
-        """Validate envelope integrity"""
+    def validate(self) -> None:
+        """
+        Validate envelope integrity.
+        
+        Raises ValueError if validation fails.
+        """
         # Basic validation
         if not self.session_id:
-            return False
+            raise ValueError("session_id is required")
         if self.timestamp <= 0:
-            return False
+            raise ValueError("timestamp must be positive")
         if not isinstance(self.payload, dict):
-            return False
+            raise ValueError("payload must be a dict")
         
         # Timestamp recency check (within 5 minutes)
         now = datetime.now().timestamp()
         if abs(now - self.timestamp) > 300:
-            return False
-        
-        return True
+            raise ValueError(f"timestamp too old or future: {abs(now - self.timestamp)} seconds from now")
