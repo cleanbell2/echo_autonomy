@@ -39,7 +39,7 @@ def test_full_request_pipeline_message_ok():
     )
 
     # 3) envelope validate (recency 등)
-    assert env.validate() is True
+    env.validate()  # Raises ValueError if invalid
 
     # 4) payload sanitize + json safety + depth protection
     payload = sanitize_payload(env.payload)
@@ -58,7 +58,7 @@ def test_full_request_pipeline_tool_call_ok():
         timestamp=_now_ts(),
         payload={"type": "tool_call", "tool_name": "calculator", "arguments": {"x": 1}},
     )
-    assert env.validate() is True
+    env.validate()  # Raises ValueError if invalid
     payload = sanitize_payload(env.payload)
     req = parse_request(payload)
     assert isinstance(req, ToolCallRequest)
@@ -72,7 +72,7 @@ def test_full_request_pipeline_status_ok():
         timestamp=_now_ts(),
         payload={"type": "status", "status": "ping"},
     )
-    assert env.validate() is True
+    env.validate()  # Raises ValueError if invalid
     payload = sanitize_payload(env.payload)
     req = parse_request(payload)
     assert isinstance(req, StatusRequest)
@@ -85,7 +85,7 @@ def test_pipeline_rejects_unknown_request_type_fail_closed():
         timestamp=_now_ts(),
         payload={"type": "unknown", "x": 1},
     )
-    assert env.validate() is True
+    env.validate()  # Raises ValueError if invalid
     payload = sanitize_payload(env.payload)
     with pytest.raises(ValueError):
         parse_request(payload)
@@ -97,7 +97,7 @@ def test_pipeline_rejects_extra_fields_pydantic_forbid():
         timestamp=_now_ts(),
         payload={"type": "message", "content": "hi", "extra_field": 123},
     )
-    assert env.validate() is True
+    env.validate()  # Raises ValueError if invalid
     payload = sanitize_payload(env.payload)
     with pytest.raises(ValidationError):
         parse_request(payload)
@@ -112,7 +112,7 @@ def test_pipeline_rejects_nesting_bomb():
         cur = nxt
 
     env = Envelope(session_id="sess-123", timestamp=_now_ts(), payload=deep)
-    assert env.validate() is True
+    env.validate()  # Raises ValueError if invalid
     with pytest.raises(ValueError):
         sanitize_payload(env.payload, max_depth=32)
 
@@ -123,7 +123,7 @@ def test_pipeline_rejects_non_json_serializable():
         timestamp=_now_ts(),
         payload={"type": "message", "content": "hi", "metadata": {"f": lambda x: x}},
     )
-    assert env.validate() is True
+    env.validate()  # Raises ValueError if invalid
     # sanitize_payload 내부에서 ensure_json_serializable을 호출하므로
     # sanitize_payload 자체가 ValueError를 발생시킨다
     with pytest.raises(ValueError):
