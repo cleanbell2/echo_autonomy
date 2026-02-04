@@ -53,7 +53,10 @@ class OpenAIClient:
                         chunk = line[len("data:"):].strip()
                         if chunk == "[DONE]":
                             return
-                        obj = json.loads(chunk)
-                        delta = obj["choices"][0].get("delta", {}).get("content")
-                        if delta:
-                            yield delta
+                        try:
+                            obj = json.loads(chunk)
+                            delta = obj["choices"][0].get("delta", {}).get("content")
+                            if delta:
+                                yield delta
+                        except json.JSONDecodeError as e:
+                            raise ValueError("OpenAI stream parse failed") from e
