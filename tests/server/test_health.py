@@ -23,4 +23,4 @@ def test_health_returns_ok(client):
     data = resp.json()
     assert data["ok"] is True
     assert data["service"] == "echo_gateway"
-    assert data["phase"] == 4
+    assert data["phase"] == 6  # Phase 6
