@@ -1,27 +1,29 @@
 """
-Gateway Wiring — Phase 6
+Gateway Wiring — Phase 7.2
 
-Orchestrator dependency injection and initialization.
+Orchestrator dependency injection with real LLM factory.
 """
 
 from __future__ import annotations
 
+from echo_gateway.config.llm_config import LLMConfig
 from echo_gateway.executor import (
-    FakeLLMClient,
     Orchestrator,
     PromptBuilder,
     ToolRegistry,
     ToolRuntime,
 )
+from echo_gateway.executor.llm_factory import build_llm_client
 from echo_gateway.session import SessionStore
 
 
 def create_orchestrator(session_store: SessionStore) -> Orchestrator:
     """
-    Create orchestrator with default configuration.
+    Create orchestrator with LLM from config/factory.
 
-    Phase 6: Uses FakeLLMClient for testing.
-    Phase 7+: Replace with real LLM adapters (OpenAI, Anthropic).
+    Phase 7.2: Uses LLMConfig + Factory pattern for dynamic LLM selection.
+    - Provider: fake (default), openai, anthropic
+    - Config loaded from environment variables
 
     Args:
         session_store: Session store instance
@@ -29,8 +31,9 @@ def create_orchestrator(session_store: SessionStore) -> Orchestrator:
     Returns:
         Configured Orchestrator instance
     """
-    # LLM client (fake for Phase 6)
-    llm = FakeLLMClient(mode="echo")
+    # LLM client (from config + factory)
+    cfg = LLMConfig.from_env()
+    llm = build_llm_client(cfg)
 
     # Tool system
     tool_registry = ToolRegistry()
