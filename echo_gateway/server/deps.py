@@ -19,6 +19,9 @@ from echo_gateway.session.store import SessionStore
 
 def get_session_store(request: Request) -> SessionStore:
     """Dependency: session store."""
+    if not hasattr(request.app.state, "session_store"):
+        # Initialize on first access (for tests)
+        request.app.state.session_store = SessionStore(ttl_seconds=3600)
     return request.app.state.session_store
 
 

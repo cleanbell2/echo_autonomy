@@ -10,6 +10,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from echo_gateway.gateway.pipeline import handle_inbound
 from echo_gateway.gateway.wiring import create_orchestrator
+from echo_gateway.ws.stream_protocol import handle_stream_request
 
 router = APIRouter()
 
@@ -20,8 +21,8 @@ async def ws_endpoint(ws: WebSocket):
     WebSocket RPC endpoint with streaming support (Phase 6).
 
     Supports two modes:
-    1. Sync RPC (Phase 4): {"session_id": ..., "payload": ...}
-    2. Stream RPC (Phase 6): {"type": "rpc.stream", "payload": {...}}
+    1. Sync RPC (Phase 4): {"session_id": ..., "payload": {"type": "message", ...}}
+    2. Stream RPC (Phase 6): {"session_id": ..., "payload": {"type": "rpc.stream", ...}}
 
     Stream events:
         rpc.stream.delta — text chunk
@@ -44,41 +45,19 @@ async def ws_endpoint(ws: WebSocket):
 
     try:
         while True:
-            msg = await ws.receive_json()
+            envelope = await ws.receive_json()
 
-            # Check if streaming request
-            if msg.get("type") == "rpc.stream":
-                # Streaming mode (Phase 6)
-                envelope = msg.get("payload", {})
-                session_id = envelope.get("session_id", "default")
-                payload = envelope.get("payload", {})
-                content = payload.get("content", "")
-                metadata = payload.get("metadata", {})
+            # Check payload type for streaming
+            payload = envelope.get("payload", {})
+            request_type = payload.get("type", "")
 
-                try:
-                    # Stream events
-                    async for event in orchestrator.stream_message(
-                        session_id=session_id, content=content, metadata=metadata
-                    ):
-                        await ws.send_json(
-                            {
-                                "type": f"rpc.stream.{event.type}",
-                                "data": event.data,
-                                "error": event.error,
-                            }
-                        )
-                except Exception as e:
-                    # Fail-closed: send error event
-                    await ws.send_json(
-                        {
-                            "type": "rpc.stream.error",
-                            "data": {},
-                            "error": str(e),
-                        }
-                    )
+            if request_type == "rpc.stream":
+                # Streaming mode (Phase 6) - use stream protocol
+                async for response in handle_stream_request(envelope, orchestrator):
+                    await ws.send_json(response)
             else:
                 # Sync RPC mode (Phase 4 compatibility)
-                response = await handle_inbound(msg, executor, safety_check)
+                response = await handle_inbound(envelope, executor, safety_check)
                 await ws.send_json(response)
 
     except WebSocketDisconnect:

@@ -76,7 +76,9 @@ async def api_stream(
                 session_id=session_id, content=content, metadata=metadata
             ):
                 # Convert StreamEvent to SSE format
-                yield f"event: {event.type}\n"
+                # event.type is StreamEventType enum, get value
+                event_type = event.type.value if hasattr(event.type, "value") else str(event.type)
+                yield f"event: {event_type}\n"
                 yield f"data: {json.dumps(event.to_dict())}\n\n"
 
         except Exception as e:
