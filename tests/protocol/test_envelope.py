@@ -30,7 +30,7 @@ def test_envelope_validation():
         timestamp=datetime.now().timestamp(),
         payload={"type": "message"}
     )
-    assert env.validate() == True
+    env.validate()  # Should not raise
     
     # Invalid: empty session_id
     env_no_session = Envelope(
@@ -38,7 +38,8 @@ def test_envelope_validation():
         timestamp=datetime.now().timestamp(),
         payload={"type": "message"}
     )
-    assert env_no_session.validate() == False
+    with pytest.raises(ValueError):
+        env_no_session.validate()
     
     # Invalid: old timestamp (6 minutes ago)
     env_old = Envelope(
@@ -46,7 +47,8 @@ def test_envelope_validation():
         timestamp=datetime.now().timestamp() - 400,
         payload={"type": "message"}
     )
-    assert env_old.validate() == False
+    with pytest.raises(ValueError):
+        env_old.validate()
     
     # Invalid: negative timestamp
     env_negative = Envelope(
@@ -54,7 +56,8 @@ def test_envelope_validation():
         timestamp=-1,
         payload={"type": "message"}
     )
-    assert env_negative.validate() == False
+    with pytest.raises(ValueError):
+        env_negative.validate()
 
 
 def test_envelope_serialization():
@@ -110,7 +113,7 @@ def test_envelope_with_signature():
     )
     
     assert env.signature == "sha256:abc123"
-    assert env.validate() == True
+    env.validate()  # Should not raise
     
     # Signature in serialization
     data = env.to_dict()
