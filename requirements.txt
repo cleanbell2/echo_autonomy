@@ -8,6 +8,7 @@ scipy>=1.13.1
 
 # Environment configuration
 python-dotenv>=1.0.0
+pydantic-settings>=2.0.0
 
 # Phase 4: Gateway Server + WebSocket
 fastapi>=0.109.0
@@ -18,3 +19,7 @@ pytest-asyncio>=0.23.0
 
 # Phase 6: Streaming (SSE)
 sse-starlette>=1.8.0
+
+# Phase 7: Real LLM Integration
+openai>=1.10.0
+anthropic>=0.18.0
