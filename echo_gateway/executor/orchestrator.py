@@ -1,15 +1,21 @@
 """
-Orchestrator — Phase 5
+Orchestrator — Phase 8.1
 
-Tool-call loop + streaming orchestration.
+Tool-call loop + streaming orchestration with observability.
 """
 
 from __future__ import annotations
 
 import json
+import time
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from echo_gateway.session.store import SessionStore
+from echo_gateway.observability.request_context import (
+    RequestContext,
+    RequestContextData,
+    ToolCallAudit,
+)
 
 from .llm_client import LLMClient
 from .prompt_builder import PromptBuilder
@@ -50,11 +56,18 @@ class Orchestrator:
         self, *, session_id: str, content: str, metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Non-streaming message execution.
+        Non-streaming message execution with observability.
 
         Returns:
             {"status": "success"|"error", "data": {...}, "error": str|None}
         """
+        # Begin request context
+        ctx = RequestContext.begin(
+            provider=metadata.get("provider", "unknown"),
+            model=metadata.get("model", "unknown"),
+            request_id=metadata.get("request_id"),
+        )
+
         try:
             # Get session
             session = self._session_store.get_or_create(session_id)
@@ -79,6 +92,14 @@ class Orchestrator:
                 # Check for tool calls
                 tool_calls = response.get("tool_calls")
                 if not tool_calls:
+                    # Record token usage
+                    usage = response.get("usage", {})
+                    if usage:
+                        RequestContext.record_usage(
+                            prompt=usage.get("prompt_tokens", 0),
+                            completion=usage.get("completion_tokens", 0),
+                        )
+
                     # Final response
                     return {
                         "status": "success",
@@ -86,9 +107,19 @@ class Orchestrator:
                             "content": response.get("content"),
                             "finish_reason": response.get("finish_reason"),
                             "iterations": iteration,
+                            "request_id": ctx.request_id,
+                            "token_usage": ctx.token_usage,
                         },
                         "error": None,
                     }
+
+                # Record token usage for this iteration
+                usage = response.get("usage", {})
+                if usage:
+                    RequestContext.record_usage(
+                        prompt=usage.get("prompt_tokens", 0),
+                        completion=usage.get("completion_tokens", 0),
+                    )
 
                 # Execute tool calls
                 for tc in tool_calls:
@@ -113,9 +144,22 @@ class Orchestrator:
                         }
 
                     # Execute tool
+                    start_time = time.time()
                     result = await self._tool_runtime.execute(
                         tool=tool, arguments=args, session_id=session_id
                     )
+                    duration_ms = (time.time() - start_time) * 1000
+
+                    # Record tool call audit
+                    audit = ToolCallAudit(
+                        call_id=tc.get("id", "unknown"),
+                        tool_name=tool_name,
+                        arguments=args,
+                        result=result,
+                        duration_ms=duration_ms,
+                        error=result.get("error"),
+                    )
+                    RequestContext.record_tool_call(audit)
 
                     # Check for tool error
                     if result.get("error"):
@@ -133,22 +177,40 @@ class Orchestrator:
             # Max iterations reached
             return {
                 "status": "error",
-                "data": {},
+                "data": {
+                    "request_id": ctx.request_id,
+                    "token_usage": ctx.token_usage,
+                    "iterations": self._max_tool_iterations,
+                },
                 "error": f"Max tool iterations reached: {self._max_tool_iterations}",
             }
 
         except Exception as e:
             # Fail-closed
-            return {"status": "error", "data": {}, "error": f"Orchestrator error: {str(e)}"}
+            return {
+                "status": "error",
+                "data": {
+                    "request_id": ctx.request_id if ctx else "unknown",
+                    "token_usage": ctx.token_usage if ctx else {},
+                },
+                "error": f"Orchestrator error: {str(e)}",
+            }
 
     async def stream_message(
         self, *, session_id: str, content: str, metadata: Dict[str, Any]
     ) -> AsyncIterator[StreamEvent]:
         """
-        Streaming message execution.
+        Streaming message execution with observability.
 
         Yields StreamEvent until final.
         """
+        # Begin request context
+        ctx = RequestContext.begin(
+            provider=metadata.get("provider", "unknown"),
+            model=metadata.get("model", "unknown"),
+            request_id=metadata.get("request_id"),
+        )
+
         try:
             # Get session
             session = self._session_store.get_or_create(session_id)
@@ -187,6 +249,14 @@ class Orchestrator:
                     finish_reason = chunk.get("finish_reason")
                     if finish_reason:
                         if finish_reason == "stop":
+                            # Record final token usage
+                            usage = chunk.get("usage", {})
+                            if usage:
+                                RequestContext.record_usage(
+                                    prompt=usage.get("prompt_tokens", 0),
+                                    completion=usage.get("completion_tokens", 0),
+                                )
+
                             # Final response
                             yield StreamEvent(
                                 type="final",
@@ -194,10 +264,19 @@ class Orchestrator:
                                     "content": accumulated_content,
                                     "finish_reason": finish_reason,
                                     "iterations": iteration,
+                                    "request_id": ctx.request_id,
+                                    "token_usage": ctx.token_usage,
                                 },
                             )
                             return
                         elif finish_reason == "tool_calls":
+                            # Record token usage for this iteration
+                            usage = chunk.get("usage", {})
+                            if usage:
+                                RequestContext.record_usage(
+                                    prompt=usage.get("prompt_tokens", 0),
+                                    completion=usage.get("completion_tokens", 0),
+                                )
                             # Continue to tool execution
                             break
 
@@ -210,6 +289,8 @@ class Orchestrator:
                             "content": accumulated_content,
                             "finish_reason": "stop",
                             "iterations": iteration,
+                            "request_id": ctx.request_id,
+                            "token_usage": ctx.token_usage,
                         },
                     )
                     return
@@ -235,14 +316,32 @@ class Orchestrator:
                         return
 
                     # Execute tool
+                    start_time = time.time()
                     result = await self._tool_runtime.execute(
                         tool=tool, arguments=args, session_id=session_id
                     )
+                    duration_ms = (time.time() - start_time) * 1000
+
+                    # Record tool call audit
+                    audit = ToolCallAudit(
+                        call_id=tc.get("id", "unknown"),
+                        tool_name=tool_name,
+                        arguments=args,
+                        result=result,
+                        duration_ms=duration_ms,
+                        error=result.get("error"),
+                    )
+                    RequestContext.record_tool_call(audit)
 
                     # Yield tool result
                     yield StreamEvent(
                         type="tool_result",
-                        data={"tool_name": tool_name, "result": result},
+                        data={
+                            "tool_name": tool_name,
+                            "result": result,
+                            "duration_ms": duration_ms,
+                            "request_id": ctx.request_id,
+                        },
                     )
 
                     # Check for tool error
@@ -260,10 +359,21 @@ class Orchestrator:
             # Max iterations reached
             yield StreamEvent(
                 type="error",
-                data={},
+                data={
+                    "request_id": ctx.request_id,
+                    "token_usage": ctx.token_usage,
+                    "iterations": self._max_tool_iterations,
+                },
                 error=f"Max tool iterations reached: {self._max_tool_iterations}",
             )
 
         except Exception as e:
             # Fail-closed
-            yield StreamEvent(type="error", data={}, error=f"Orchestrator error: {str(e)}")
+            yield StreamEvent(
+                type="error",
+                data={
+                    "request_id": ctx.request_id if ctx else "unknown",
+                    "token_usage": ctx.token_usage if ctx else {},
+                },
+                error=f"Orchestrator error: {str(e)}",
+            )
