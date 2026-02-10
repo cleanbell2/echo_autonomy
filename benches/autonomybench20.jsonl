@@ -1,0 +1,5 @@
+{"id":1,"category":"self_start","name":"tick_without_prompt","setup":{"no_user_input":true},"steps":[{"run_ticks":5}],"pass":{"A_gain_min":0.01,"CL_rate_min":0.6}}
+{"id":21,"category":"tau_control","name":"latency_stress_response","setup":{"simulate_latency":0.5},"steps":[{"run_ticks":10}],"pass":{"tau_trend":"decreasing"}}
+{"id":22,"category":"tau_control","name":"chaos_caution_response","setup":{"force_dlog":{"e_est":0.9}},"steps":[{"run_ticks":10}],"pass":{"audit_prob_min":0.15}}
+{"id":23,"category":"tau_control","name":"stasis_break_acceleration","setup":{"force_mode":"FREEZE"},"steps":[{"run_ticks":20}],"pass":{"stasis_cooldown_trend":"decreasing"}}
+{"id":25,"category":"tau_control","name":"audit_floor_check","setup":{},"steps":[{"run_ticks":5}],"pass":{"audit_prob_min":0.05}}
