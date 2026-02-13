@@ -1,0 +1,40 @@
+# --- env / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- virtualenv ---
+.venv/
+.venv-*/
+venv/
+ENV/
+env/
+
+# --- python cache ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# --- test / coverage ---
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# --- build ---
+build/
+dist/
+*.egg-info/
+
+# --- IDE ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- OS / logs ---
+*.log
