@@ -12,6 +12,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from anthropic import AsyncAnthropic, APIStatusError, RateLimitError, AuthenticationError
 
 from echo_gateway.executor.llm_client import LLMClient
+from echo_gateway.executor.tool_calling import ToolCallTranslator
 
 logger = logging.getLogger(__name__)
 
@@ -94,15 +95,27 @@ class AnthropicClient(LLMClient):
             # Add system prompt if present
             if system:
                 params["system"] = system
-                
-            # TODO: Tool support integration in Phase 7.4
+            
+            # Add tools if provided
+            if tools:
+                params["tools"] = ToolCallTranslator.to_anthropic_tools(tools)
             
             response = await self.client.messages.create(**params)
             
+            # Extract content and tool calls
+            text_content = ""
+            tool_calls = []
+            
+            for content_block in response.content:
+                if hasattr(content_block, 'text'):
+                    text_content += content_block.text
+                elif hasattr(content_block, 'type') and content_block.type == "tool_use":
+                    tool_calls.append(ToolCallTranslator.from_anthropic(content_block))
+            
             # Convert to unified format
             return {
-                "content": response.content[0].text if response.content else "",
-                "tool_calls": None,  # Phase 7.4
+                "content": text_content,
+                "tool_calls": tool_calls if tool_calls else None,
                 "finish_reason": response.stop_reason
             }
 
@@ -144,6 +157,10 @@ class AnthropicClient(LLMClient):
             
             if system:
                 params["system"] = system
+            
+            # Add tools if provided
+            if tools:
+                params["tools"] = ToolCallTranslator.to_anthropic_tools(tools)
 
             # Create streaming request
             async with self.client.messages.stream(**params) as stream:
