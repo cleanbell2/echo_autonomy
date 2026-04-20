@@ -102,7 +102,9 @@ async def test_openai_complete_success():
 
         result = await client.complete([{"role": "user", "content": "Hi"}])
 
-        assert result == "Hello from OpenAI!"
+        assert result["content"] == "Hello from OpenAI!"
+        assert result["tool_calls"] is None
+        assert result["finish_reason"] == "stop"
 
 
 @pytest.mark.asyncio
@@ -128,7 +130,9 @@ async def test_openai_stream_success():
         async for chunk in client.stream([{"role": "user", "content": "Hi"}]):
             chunks.append(chunk)
 
-        assert "".join(chunks) == "Hello world"
+        # Extract content from dict chunks
+        content = "".join([c["content"] for c in chunks if c.get("content")])
+        assert content == "Hello world"
 
 
 @pytest.mark.asyncio
@@ -199,4 +203,5 @@ async def test_openai_stream_empty_lines():
         async for chunk in client.stream([{"role": "user", "content": "Hi"}]):
             chunks.append(chunk)
 
-        assert "".join(chunks) == "Test"
+        content = "".join([c["content"] for c in chunks if c.get("content")])
+        assert content == "Test"
