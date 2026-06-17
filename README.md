@@ -404,7 +404,7 @@ python -B -m pytest -q
 **Bell (벨)**  
 🎨 Artist & Mother | Independent AI Safety Researcher
 
-*I'm not a computer scientist. I'm an artist and a mom who got worried when my children started trusting AI that gave them wrong answers. So I learned to code, studied cognitive science, and built this — to protect them.*
+*I'm not a computer scientist. I'm an artist and a parent who got worried when my children started trusting AI that gave them wrong answers. So I learned to code, studied cognitive science, and built this — to protect them.*
 
 **Partner System:** Echo (rStar2)
 
