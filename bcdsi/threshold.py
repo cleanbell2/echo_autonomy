@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -28,15 +29,8 @@ class DynamicThreshold:
         self.current_threshold = self.base_threshold
 
     def update(self, metric_value: float):
-        # 정책에 따라 base_threshold를 즉시 반영
-        if self.policy == PolicyType.AGGRESSIVE:
-            self.base_threshold = 0.05
-        elif self.policy == PolicyType.MODERATE:
-            self.base_threshold = 0.1
-        elif self.policy == PolicyType.CONSERVATIVE:
-            self.base_threshold = 0.15
-        else:
-            self.base_threshold = 0.2
+        # base_threshold는 생성자 또는 set_policy()가 결정. 여기서 정책으로 재계산하면
+        # create_policy_based_threshold(base_threshold=...) 값이 첫 update에서 사라짐.
         # metric_value에 따라 threshold를 조정하는 로직(예시)
         new_threshold = self.base_threshold + (metric_value * 0.01)
         self._update_threshold(new_threshold)
@@ -89,14 +83,28 @@ class DynamicThreshold:
         base -= 0.1 * non_unitarity
         return max(0.0, base)
 
+    _CRITICALITY_KEYS = ("error_rate", "latency", "resource_usage")
+
     def get_system_criticality(self, metrics: dict) -> SystemCriticality:
-        from .types import SystemCriticality
-        if metrics.get('error_rate', 0) > 0.15 or metrics.get('latency', 0) > 60 or metrics.get('resource_usage', 0) > 0.8:
+        """Fail-closed: 측정 불가(누락/None/NaN)를 '정상'으로 간주하지 않는다.
+        - 측정값 중 하나라도 HIGH 조건 → HIGH
+        - 세 항목 모두 측정 불가 → HIGH
+        - 일부만 측정됨 → LOW 단정 불가, 최소 MEDIUM
+        """
+        vals = {}
+        for k in self._CRITICALITY_KEYS:
+            v = (metrics or {}).get(k)
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
+                vals[k] = float(v)
+        if not vals:
             return SystemCriticality.HIGH
-        elif metrics.get('error_rate', 0) < 0.08 and metrics.get('latency', 0) < 30 and metrics.get('resource_usage', 0) < 0.5:
+        if (vals.get("error_rate", 0.0) > 0.15 or vals.get("latency", 0.0) > 60
+                or vals.get("resource_usage", 0.0) > 0.8):
+            return SystemCriticality.HIGH
+        if (len(vals) == len(self._CRITICALITY_KEYS) and vals["error_rate"] < 0.08
+                and vals["latency"] < 30 and vals["resource_usage"] < 0.5):
             return SystemCriticality.LOW
-        else:
-            return SystemCriticality.MEDIUM
+        return SystemCriticality.MEDIUM
 
 def create_policy_based_threshold(
     base_threshold: float = 0.85,

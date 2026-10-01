@@ -20,7 +20,6 @@ def _effective_threshold(base_threshold: float, context: Optional[Dict[str, Any]
             thr -= 0.01
     return max(0.0, thr)
 
-import time
 def intervene(e_break_value: float, theta_integrity: float, base_threshold: float, *, context=None, action_taken=None, effectiveness_score=None):
     e = float(e_break_value)
     theta = _clamp01(float(theta_integrity))
@@ -70,7 +69,6 @@ def intervene(e_break_value: float, theta_integrity: float, base_threshold: floa
         effectiveness_score=float(effectiveness_score) if effectiveness_score is not None else float(eff),
         context=context,
         reason=reason,
-        timestamp=time.time(),
     )
 
 @dataclass
@@ -81,17 +79,18 @@ class BCDSIInterventionHistory:
         default_factory=lambda: defaultdict(int)
     )
 
+    @staticmethod
+    def _count_key(level: InterventionLevel) -> InterventionLevel:
+        # MONITOR는 WARNING으로 집계 (기존 test_intervention_history 기대값 유지).
+        # 추가와 제거가 반드시 같은 키를 써야 카운트가 음수로 새지 않음.
+        return InterventionLevel.WARNING if level == InterventionLevel.MONITOR else level
+
     def add_record(self, record: InterventionRecord) -> None:
         self.records.append(record)
-        # MONITOR는 WARNING으로 집계 (테스트 기대값)
-        level = record.intervention_level
-        if level == InterventionLevel.MONITOR:
-            self.intervention_counts[InterventionLevel.WARNING] += 1
-        else:
-            self.intervention_counts[level] += 1
+        self.intervention_counts[self._count_key(record.intervention_level)] += 1
         if len(self.records) > self.max_history:
             removed = self.records.pop(0)
-            self.intervention_counts[removed.intervention_level] -= 1
+            self.intervention_counts[self._count_key(removed.intervention_level)] -= 1
 
     def get_pattern_analysis(self) -> Dict[str, Any]:
         if len(self.records) < 5:
@@ -111,5 +110,8 @@ class BCDSIInterventionHistory:
 
 # 로그 포맷팅 (레거시 지원)
 def format_intervention_message(record: InterventionRecord) -> str:
-    time_str = record.timestamp.strftime("%H:%M:%S") if record.timestamp else "N/A"
+    ts = record.timestamp
+    if isinstance(ts, (int, float)) and not isinstance(ts, bool):
+        ts = datetime.fromtimestamp(ts, tz=timezone.utc)  # 이전 버전 float 레코드 호환
+    time_str = ts.strftime("%H:%M:%S") if ts else "N/A"
     return f"[{time_str}] INTERVENTION: {record.intervention_level.value} {record.action_taken}"
