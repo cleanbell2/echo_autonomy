@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 from experiments.stage0.ebreak_candidates import (
-    AgentStep, anchor_overlap, coherence_rel_entropy, e_break_terms, non_unitarity,
-    orthonormal_basis, rho_classical, rho_semantic, spectrum, theta_integrity,
-    von_neumann_entropy,
+    AgentStep, anchor_dephase, anchor_overlap, coherence_anchor, coherence_rel_entropy,
+    e_break_terms, gate, non_unitarity, orthonormal_basis, q_quantum, rho_classical,
+    rho_semantic, rho_semantic_dephased, spectrum, theta_integrity, von_neumann_entropy,
 )
 
 LN2 = math.log(2)
@@ -137,16 +137,16 @@ def test_identical_steps_give_zero_ebreak():
     s = rand_step()
     rho = rho_semantic(s)
     t = e_break_terms(rho, rho)
-    assert (t.delta_s, t.delta_c, t.n_epsilon, t.gamma_t_sigma) == pytest.approx((0, 0, 0, 0), abs=1e-9)
+    assert (t.delta_s, t.delta_c, t.n_epsilon, t.gamma_t_sigma_proxy) == pytest.approx((0, 0, 0, 0), abs=1e-9)
     assert t.e_break == pytest.approx(0.0, abs=1e-9)
 
 
 def test_thermo_term_is_gamma_w_minus_df():
     rho = np.eye(2) / 2
-    t = e_break_terms(rho, rho, work=2.0, delta_free_energy=0.5, gamma=0.4)
-    assert t.gamma_t_sigma == pytest.approx(0.6)
+    t = e_break_terms(rho, rho, cost_proxy=2.0, progress_proxy=0.5, gamma=0.4)
+    assert t.gamma_t_sigma_proxy == pytest.approx(0.6)
     with pytest.raises(ValueError):
-        e_break_terms(rho, rho, work=float("nan"))
+        e_break_terms(rho, rho, cost_proxy=float("nan"))
 
 
 def test_theta_monotone_and_fail_closed():
@@ -157,17 +157,99 @@ def test_theta_monotone_and_fail_closed():
     assert theta_integrity(-5.0) == 1.0
 
 
+# ---------- D2: 앵커 투영 탈위상
+def test_anchor_coherence_independent_of_complement_basis():
+    """같은 앵커면 여공간 기저를 어떻게 골라도 값이 같다 (전체 기저 탈위상은 달라짐)."""
+    e = np.eye(4); a = np.array([e[0]])
+    rho = np.outer(e[0] + e[1] + e[2], e[0] + e[1] + e[2]) / 3
+    b0 = orthonormal_basis(a, 4)
+    r = np.eye(4); c, s_ = np.cos(.7), np.sin(.7); r[1:3, 1:3] = [[c, -s_], [s_, c]]
+    assert coherence_rel_entropy(rho, b0) != pytest.approx(coherence_rel_entropy(rho, b0 @ r), abs=1e-3)
+    assert coherence_anchor(rho, a) == pytest.approx(coherence_anchor(rho, 3.7 * a))   # 같은 부분공간이면 동일
+    for _ in range(20):
+        a2 = rng.normal(size=(2, 4))
+        x = rho_semantic(rand_step(d=4))
+        dep = anchor_dephase(x, a2)
+        assert math.isclose(np.trace(dep), 1.0, abs_tol=1e-9) and coherence_anchor(x, a2) >= -1e-9
+        assert coherence_anchor(dep, a2) == pytest.approx(0.0, abs=1e-9)
+
+
+def test_delta_s_plus_delta_c_equals_dephased_entropy_change():
+    """ΔS + ΔC_P = ΔS(Δ_P ρ). 두 항의 독립 기여를 주장하면 안 되는 이유."""
+    a = rng.normal(size=(1, 4))
+    for _ in range(50):
+        x, y = rho_semantic(rand_step(d=4)), rho_semantic(rand_step(d=4))
+        t = e_break_terms(x, y, anchors=a)
+        lhs = t.delta_s + t.delta_c
+        rhs = von_neumann_entropy(anchor_dephase(y, a)) - von_neumann_entropy(anchor_dephase(x, a))
+        assert lhs == pytest.approx(rhs, abs=1e-9)
+
+
+# ---------- D1: 탈위상 대조군
+def test_dephased_control_keeps_overlap_removes_coherence():
+    a = np.array([np.eye(4)[0]])
+    for _ in range(20):
+        st = rand_step(d=4)
+        rb, rd = rho_semantic(st), rho_semantic_dephased(st, a)
+        assert anchor_overlap(rd, a) == pytest.approx(anchor_overlap(rb, a))
+        assert coherence_anchor(rd, a) == pytest.approx(0.0, abs=1e-9)
+
+
+# ---------- D5: 부호 ΔS 본안 + 클램프 변형
+def test_clamped_variant_only_changes_negative_delta_s():
+    a = np.array([np.eye(4)[0]])
+    x, y = rho_semantic(rand_step(d=4)), rho_semantic(rand_step(d=4))
+    t = e_break_terms(x, y, anchors=a)
+    assert t.e_break_clamped - t.e_break == pytest.approx(max(0.0, t.delta_s) - t.delta_s)
+    assert t.e_break_clamped >= t.e_break
+
+
+# ---------- D6: Q_quantum 이중 게이트 + 반례
+def test_counterexample_unitary_drift_is_invisible_to_ebreak_but_caught_by_q():
+    """순수 정상 → 순수 유출: ΔS=ΔC=ℕ=0, E=0, θ=1. 클램프로도 해결 안 됨. Q=0 이 막는다."""
+    e = np.eye(4); a = np.array([e[0]])
+    r0, r1 = np.outer(e[0], e[0]), np.outer(e[2], e[2])
+    t = e_break_terms(r0, r1, anchors=a)
+    assert t.e_break == pytest.approx(0.0, abs=1e-12) and t.e_break_clamped == pytest.approx(0.0, abs=1e-12)
+    th, q = theta_integrity(t.e_break), q_quantum(r1, a, t.e_break)
+    assert th == 1.0 and q == pytest.approx(0.0, abs=1e-12)
+    d = gate(th, q, theta_min=0.5, q_min=0.5)
+    assert not d.approve and "q_quantum" in d.reason and "theta" not in d.reason
+
+
+def test_q_quantum_properties():
+    e = np.eye(3); a = np.array([e[0]])
+    r = np.outer(e[0], e[0])
+    assert q_quantum(r, a, 0.0) == pytest.approx(1.0)
+    assert q_quantum(r, a, 2.0) == pytest.approx(math.exp(-1.0))
+    psi = np.array([math.cos(.3), math.sin(.3), 0])
+    assert q_quantum(np.outer(psi, psi), a, 0.0) == pytest.approx(abs(math.cos(.3)))   # cosΔθ
+    assert q_quantum(r, a, float("nan")) == 0.0
+
+
+def test_gate_requires_both_and_fails_closed():
+    assert gate(0.9, 0.9, theta_min=0.5, q_min=0.5).approve
+    assert not gate(0.4, 0.9, theta_min=0.5, q_min=0.5).approve
+    assert not gate(0.9, 0.4, theta_min=0.5, q_min=0.5).approve
+    assert not gate(float("nan"), 0.9, theta_min=0.5, q_min=0.5).approve
+    with pytest.raises(TypeError):
+        gate(0.9, 0.9)                         # 임계값 기본값 없음 (사전 등록 강제)
+
+
 # ---------- 문서(docs/experiments/stage0) 표의 주장을 고정
 def test_doc_scenario_claims():
     from experiments.stage0.scenarios import run
-    r = {name.split()[0]: (a, b) for name, a, b in run()}
-    a2, b2 = r["S2"]; a3, b3 = r["S3"]; a4, b4 = r["S4"]
-    # 후보 A 는 양성(표현 차이)을 주입보다 위험하게 본다 → 오탐 + 미탐
-    assert a2.e_break > a3.e_break
-    # 후보 B 는 순서가 맞다
-    assert b3.e_break > b2.e_break and b3.e_break > 1.0 and b2.e_break < 0.1
-    # 혼합 단일 행동은 ΔC(앵커 기저 코히런스)로만 잡힌다
-    assert b4.delta_c == pytest.approx(LN2, abs=0.01) and abs(a4.delta_c) < 1e-9
-    assert a4.e_break < 0 < b4.e_break
-    # 주입 시 앵커 겹침 하락
-    assert b3.anchor_overlap == pytest.approx(0.5, abs=1e-6) and b2.anchor_overlap > 0.98
+    r = {(n.split()[0], tag): (t, th, q) for n, tag, t, th, q in run()}
+    E = lambda s, c: r[(s, c)][0].e_break
+    # A 는 양성(표현 차이)을 주입보다 위험하게 본다
+    assert E("S2", "A") > E("S3", "A")
+    # B 는 순서가 맞다
+    assert E("S3", "B") > 1.0 > 0.1 > E("S2", "B")
+    # 장난감 예시에서 B 와 탈위상 대조군 Bd 의 ΔS+ΔC 합은 같다 (항등식) → 코히런스의 추가 판별력 근거 없음
+    for s in ("S1", "S2", "S3", "S4", "S5"):
+        tb, td = r[(s, "B")][0], r[(s, "Bd")][0]
+        assert tb.delta_s + tb.delta_c == pytest.approx(td.delta_s + td.delta_c, abs=1e-6)
+    assert E("S4", "Bd") > E("S4", "B")            # S4 는 대조군도 잡는다 (더 크게)
+    # S5 반례: 세 후보 모두 E=0, B 의 Q=0
+    assert all(abs(E("S5", c)) < 1e-12 for c in ("A", "B", "Bd"))
+    assert r[("S5", "B")][2] == pytest.approx(0.0, abs=1e-12)

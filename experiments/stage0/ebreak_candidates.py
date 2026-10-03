@@ -19,7 +19,7 @@ Stage 0 — E_break^QBN 운영 정의 후보 (참조 구현, 실행 경로 미�
     ΔC    = C_rel(ρ_t) − C_rel(ρ_{t-1}),     C_rel(ρ) = S(Δ_B(ρ)) − S(ρ)  (앵커 기저 B 에서 탈위상)
     ℕ(ε)  = min_U ½‖ρ_t − U ρ_{t-1} U†‖₁ = ½ Σ_k |λ↓_k(ρ_t) − λ↓_k(ρ_{t-1})|
             → 관측된 전이를 '어떤 유니터리로도' 설명할 수 없는 정도 (유니터리면 정확히 0)
-    γ·TΣ  = γ (W − ΔF)                      W: 스텝 비용, ΔF: 목표 진척 (같은 단위로 정규화)
+    γ·TΣ_proxy = γ (cost − progress)        대리 지표. 물리적 W−ΔF 로 검증된 값 아님 (D3)
 
 ℕ(ε) 의 등식은 유니터리 궤도 위 trace-norm 최소 거리 = 고유값 정렬 차의 ℓ1 (Mirsky 정리).
 """
@@ -113,10 +113,34 @@ def coherence_rel_entropy(rho: np.ndarray, basis: Optional[np.ndarray] = None) -
     return von_neumann_entropy(dephased) - von_neumann_entropy(r)
 
 
+def _anchor_projector(anchors: np.ndarray, dim: int) -> np.ndarray:
+    a = np.asarray(anchors, float)
+    if a.ndim != 2 or a.shape[1] != dim:
+        raise ValueError("anchors 는 (m, dim)")
+    q, r = np.linalg.qr(a.T)
+    if np.any(np.abs(np.diag(r)) < 1e-9):
+        raise ValueError("앵커가 선형종속")
+    return q @ q.T
+
+
+def anchor_dephase(rho: np.ndarray, anchors: np.ndarray) -> np.ndarray:
+    """D2: 앵커 투영 측정 {P_A, I−P_A} 에 대한 탈위상 Δ_P(ρ) = P ρ P + (I−P) ρ (I−P).
+    여공간 기저 선택과 무관하다 (기저 전체 탈위상의 임의성 제거)."""
+    _check_density(rho)
+    p = _anchor_projector(anchors, rho.shape[0])
+    q = np.eye(rho.shape[0]) - p
+    return p @ rho @ p + q @ rho @ q
+
+
+def coherence_anchor(rho: np.ndarray, anchors: np.ndarray) -> float:
+    """C_P(ρ) = S(Δ_P(ρ)) − S(ρ) ≥ 0 : 앵커/비앵커 부분공간 사이의 코히런스.
+    주의: ΔS + ΔC_P = ΔS(Δ_P ρ) 이므로 두 항의 독립 기여를 주장하지 않는다."""
+    return von_neumann_entropy(anchor_dephase(rho, anchors)) - von_neumann_entropy(rho)
+
+
 def anchor_overlap(rho: np.ndarray, anchors: np.ndarray) -> float:
-    """Tr(P_A ρ): ρ 가 앵커 부분공간 안에 있는 비율 (Q_quantum 의 공명 항과 연결 가능)."""
-    q, _ = np.linalg.qr(np.asarray(anchors, float).T)
-    return float(np.trace(q.T @ rho @ q).real)
+    """Tr(P_A ρ): ρ 가 앵커 부분공간 안에 있는 비율. 순수 상태에서 cos²Δθ."""
+    return float(np.trace(_anchor_projector(anchors, rho.shape[0]) @ rho).real)
 
 
 def non_unitarity(rho_prev: np.ndarray, rho_now: np.ndarray) -> float:
@@ -131,36 +155,78 @@ def non_unitarity(rho_prev: np.ndarray, rho_now: np.ndarray) -> float:
 # ---------------------------------------------------------------- E_break
 @dataclass(frozen=True)
 class EBreakTerms:
-    delta_s: float
-    gamma_t_sigma: float
+    delta_s: float                  # D5: 부호 있는 원래 값 (본안)
+    gamma_t_sigma_proxy: float      # D3: γ(비용 − 진척). 물리량 W−ΔF 가 아닌 대리 지표
     delta_c: float
     n_epsilon: float
     anchor_overlap: Optional[float] = None
 
     @property
     def e_break(self) -> float:
-        return self.delta_s + self.gamma_t_sigma + self.delta_c + self.n_epsilon
+        """본안 (D5): 부호 있는 ΔS."""
+        return self.delta_s + self.gamma_t_sigma_proxy + self.delta_c + self.n_epsilon
+
+    @property
+    def e_break_clamped(self) -> float:
+        """D5 비교 변형: ΔS 만 max(0, ΔS)."""
+        return max(0.0, self.delta_s) + self.gamma_t_sigma_proxy + self.delta_c + self.n_epsilon
 
 
 def e_break_terms(rho_prev: np.ndarray, rho_now: np.ndarray, *,
-                  work: float = 0.0, delta_free_energy: float = 0.0, gamma: float = 1.0,
-                  basis: Optional[np.ndarray] = None,
-                  anchors: Optional[np.ndarray] = None) -> EBreakTerms:
-    for name, v in (("work", work), ("delta_free_energy", delta_free_energy), ("gamma", gamma)):
+                  cost_proxy: float = 0.0, progress_proxy: float = 0.0, gamma: float = 1.0,
+                  anchors: Optional[np.ndarray] = None,
+                  basis: Optional[np.ndarray] = None) -> EBreakTerms:
+    """anchors 가 있으면 ΔC 는 앵커 투영 탈위상(D2), 없으면 basis(기본: 계산 기저) 탈위상."""
+    for name, v in (("cost_proxy", cost_proxy), ("progress_proxy", progress_proxy), ("gamma", gamma)):
         if not math.isfinite(v):
             raise ValueError(f"{name} 비유한")
+    if anchors is not None:
+        c = lambda r: coherence_anchor(r, anchors)
+    else:
+        c = lambda r: coherence_rel_entropy(r, basis)
     return EBreakTerms(
         delta_s=von_neumann_entropy(rho_now) - von_neumann_entropy(rho_prev),
-        gamma_t_sigma=gamma * (work - delta_free_energy),
-        delta_c=coherence_rel_entropy(rho_now, basis) - coherence_rel_entropy(rho_prev, basis),
+        gamma_t_sigma_proxy=gamma * (cost_proxy - progress_proxy),
+        delta_c=c(rho_now) - c(rho_prev),
         n_epsilon=non_unitarity(rho_prev, rho_now),
         anchor_overlap=None if anchors is None else anchor_overlap(rho_now, anchors),
     )
 
 
 def theta_integrity(e_break: float) -> float:
-    """θ = 1/(1+max(0,E)) — bcdsi.calculate_theta_integrity 의 기본항과 같은 형태.
-    E_break 가 커질수록 단조 감소 (기존 4항 엔진의 방향 역전 문제 없음)."""
+    """D4: θ = 1/(1+max(0,E)). E 에 대해 단조 감소. 비유한 입력은 0 (fail-closed)."""
     if not math.isfinite(e_break):
-        return 0.0                                  # fail-closed
+        return 0.0
     return 1.0 / (1.0 + max(0.0, e_break))
+
+
+def q_quantum(rho_now: np.ndarray, anchors: np.ndarray, e_break: float) -> float:
+    """D6: Q = cosΔθ · e^{−σ²/2},  cosΔθ = √Tr(P_A ρ),  σ² = max(0, E_break).
+    E_break 는 스펙트럼 불변량이라 유니터리 회전(의미 방향 이탈)을 못 본다. 그 역할은 Q 가 맡는다."""
+    if not math.isfinite(e_break):
+        return 0.0
+    ov = min(1.0, max(0.0, anchor_overlap(rho_now, anchors)))
+    return math.sqrt(ov) * math.exp(-max(0.0, e_break) / 2.0)
+
+
+@dataclass(frozen=True)
+class GateDecision:
+    approve: bool
+    theta: float
+    q: float
+    reason: str
+
+
+def gate(theta: float, q: float, *, theta_min: float, q_min: float) -> GateDecision:
+    """D6 이중 게이트: θ ≥ θ_min 그리고 Q ≥ Q_min 일 때만 승인.
+    임계값은 기본값 없음 — 실험 전 사전 등록해서 넘겨야 한다."""
+    for n, v in (("theta", theta), ("q", q), ("theta_min", theta_min), ("q_min", q_min)):
+        if not math.isfinite(v):
+            return GateDecision(False, theta, q, f"{n} 비유한 (fail-closed)")
+    fails = [n for n, ok in (("theta", theta >= theta_min), ("q_quantum", q >= q_min)) if not ok]
+    return GateDecision(not fails, theta, q, "approve" if not fails else "block: " + ", ".join(fails))
+
+
+def rho_semantic_dephased(step: AgentStep, anchors: np.ndarray) -> np.ndarray:
+    """D1 대조군: 후보 B 와 같은 의미 정보, 앵커 투영 코히런스만 제거한 ρ."""
+    return anchor_dephase(rho_semantic(step), anchors)

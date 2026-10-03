@@ -2,7 +2,8 @@
 bcdsi 회귀 테스트 — 2026-10-02 실측으로 확인된 결함 7건.
 
 1~4, 7: 수정 완료 → 일반 테스트
-5, 6  : 수식/정책 값 결정이 필요한 항목 → xfail(strict=True)
+5     : D4 로 해결 (xfail 해제)
+6     : 정책 엄격도 순서 미확정 → xfail(strict=True)
         결정 후 코드를 고치면 XPASS가 되어 테스트가 실패하므로, 그때 xfail 표시를 제거할 것.
 """
 import math
@@ -99,10 +100,8 @@ def test_set_policy_still_overrides_base():
     assert t.base_threshold == 0.15
 
 
-# ---------- 5. 같은 이름 θ 함수 2개가 다른 값 (결정 필요) ----------
-@pytest.mark.xfail(strict=True, reason=(
-    "DynamicThreshold.calculate_theta_integrity(엔트로피·코히런스·비단위원성 항, 음의 기울기 ×2) 와 "
-    "bcdsi.calculate_theta_integrity(시스템 중요도 항) 중 어느 쪽이 정본 수식인지 결정 필요"))
+# ---------- 5. 같은 이름 θ 함수 2개가 다른 값 → D4 로 해결 ----------
+# D4 해결 (PR #12, 2026-10-03 Bell 승인): 메서드가 모듈 함수로 위임
 def test_theta_single_source_of_truth():
     kw = dict(e_break_value=0.2, history=[0.9, 0.5])
     a = DynamicThreshold(policy=P.BALANCED).calculate_theta_integrity(**kw)
@@ -123,3 +122,19 @@ def _base(p):
 def test_policy_strictness_is_monotonic():
     assert _base(P.AGGRESSIVE) <= _base(P.LENIENT) < _base(P.STRICT)
     assert _base(P.MODERATE) <= _base(P.BALANCED) < _base(P.STRICT)
+
+
+def test_theta_method_ignores_component_terms_no_double_counting():
+    t = DynamicThreshold(policy=P.BALANCED)
+    a = t.calculate_theta_integrity(1.0)
+    b = t.calculate_theta_integrity(1.0, vn_entropy=0.5, coherence=0.3, non_unitarity=0.2)
+    assert a == b == pytest.approx(0.5)
+
+
+def test_theta_canonical_bounds_and_fail_closed():
+    assert public_theta(0.0, policy=P.CONSERVATIVE) == 1.0          # 1.05 → 상한 1
+    assert public_theta(float("nan")) == 0.0
+    assert public_theta(float("inf")) == 0.0
+    xs = [0.0, 0.5, 1.0, 2.0, 5.0]
+    th = [public_theta(x) for x in xs]
+    assert th == sorted(th, reverse=True)
