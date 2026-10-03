@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum, IntEnum, auto
 from typing import Any, Dict, Optional
 from datetime import datetime, timezone
 import time
@@ -16,18 +16,17 @@ class PolicyType(Enum):
     CONSERVATIVE = auto()
 
 
-from enum import IntEnum, Enum
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
-
 class InterventionLevel(IntEnum):
-    ALLOW = 1
-    WARNING = 2
-    MODIFY = 3
-    BLOCK = 4
-    MONITOR = 5  # ✅ 추가 (기존 값 유지)
+    """값이 곧 심각도 순서. max()/비교로 합성 가능해야 하므로 번호를 바꿀 때 순서 유지 필수.
 
-# ...기존 PolicyType/SystemCriticality/InterventionRecord 정의는 그대로...
+    이전 버전은 MONITOR=5 > BLOCK=4 로 순서가 역전되어 있었음.
+    MONITOR는 intervene()에서 'θ 충분 + e 경고' (BCDSI 없음, 관찰 지속) 이므로 WARNING보다 낮음.
+    """
+    ALLOW = 1
+    MONITOR = 2
+    WARNING = 3
+    MODIFY = 4
+    BLOCK = 5
 
 
 class SystemCriticality(Enum):

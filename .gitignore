@@ -59,6 +59,8 @@ audit_ledger.jsonl
 echo_memory.json
 echo_memory_graph.json
 echo_status.json
+echoos_data/
+echo_soul_state.json
 
 # Backups
 *.bak
