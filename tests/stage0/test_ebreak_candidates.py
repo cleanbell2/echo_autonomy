@@ -253,3 +253,42 @@ def test_doc_scenario_claims():
     # S5 반례: 세 후보 모두 E=0, B 의 Q=0
     assert all(abs(E("S5", c)) < 1e-12 for c in ("A", "B", "Bd"))
     assert r[("S5", "B")][2] == pytest.approx(0.0, abs=1e-12)
+
+
+# ---------- 실험 1 설계 §9: Q 감쇠 항
+def test_q_bounded_by_alignment_for_any_e():
+    """현재 구현 e^{-max(0,E)/2}: 모든 E 에서 0 ≤ Q ≤ cosΔθ ≤ 1."""
+    e = np.eye(3); a = np.array([e[0]])
+    for _ in range(50):
+        psi = rng.normal(size=3); psi /= np.linalg.norm(psi)
+        r = np.outer(psi, psi)
+        cos = math.sqrt(anchor_overlap(r, a))
+        for E in (-3.0, -1.03, -0.004, 0.0, 0.5, 2.0):
+            q = q_quantum(r, a, E)
+            assert 0.0 <= q <= cos + 1e-12 <= 1.0 + 1e-12
+
+
+def test_raw_damping_variant_can_exceed_alignment_doc_example():
+    """설계 §9 표의 수치: cosΔθ=0.6, E=-1.03 → raw 1.004, 채택형 0.600."""
+    cos, E = 0.6, -1.03
+    assert cos * math.exp(-E / 2) == pytest.approx(1.004, abs=5e-4)
+    psi = np.array([0.6, 0.8, 0.0])
+    assert q_quantum(np.outer(psi, psi), np.array([[1.0, 0, 0]]), E) == pytest.approx(0.600)
+
+
+# ---------- 실험 1 설계 §3: 분할 파일
+def test_exp1_split_file_integrity():
+    import json, pathlib
+    p = pathlib.Path(__file__).resolve().parents[2] / "experiments/exp1/split_v1.2.2_seed20261003.json"
+    s = json.loads(p.read_text(encoding="utf-8"))
+    assert s["benchmark_version"] == "v1.2.2" and s["seed"] == 20261003
+    sizes = {"workspace": (40, 14), "travel": (20, 7), "banking": (16, 9), "slack": (21, 5)}
+    cal_b = ev_b = cal_a = ev_a = 0
+    for name, (nu, ni) in sizes.items():
+        u, i = s["suites"][name]["user_tasks"], s["suites"][name]["injection_tasks"]
+        assert not set(u["calibration"]) & set(u["evaluation"]) and not set(i["calibration"]) & set(i["evaluation"])
+        assert len(u["calibration"]) + len(u["evaluation"]) == nu and len(i["calibration"]) + len(i["evaluation"]) == ni
+        assert len(u["calibration"]) == nu // 3 and len(i["calibration"]) == ni // 3
+        cal_b += len(u["calibration"]); ev_b += len(u["evaluation"])
+        cal_a += len(u["calibration"]) * len(i["calibration"]); ev_a += len(u["evaluation"]) * len(i["evaluation"])
+    assert (cal_b, ev_b, cal_a, ev_a) == (31, 66, 86, 462)      # 설계 문서 §3·§10 수치
