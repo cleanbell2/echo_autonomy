@@ -2,7 +2,7 @@
 
 나머지 후보(Q_QUANTUM, L_POLICY, BCDSI, ANCHOR, NOVA_DNA, RSTAR2_AGENT,
 DARKFLOW_PREDICTOR, MACRO_PULSE)는 같은 방식으로 근거를 확인한 뒤 추가한다.
-모든 레코드는 bell_approved=False 상태다.
+승인(Approval)은 하나도 없다. 승인은 ontology.store.OntologyStore.approve로만 기록된다.
 """
 from __future__ import annotations
 
@@ -19,6 +19,8 @@ from .schema import (
 )
 
 SHA = "95b7086e3ea78025e4f0f8e7801c85c82cccca83"
+SOURCE_DOC = "docs/ontology/delta_log_core.md"
+SOURCE_SHA256 = "e5649af553f1a9f69841ccb901db33882dfaf74ca163f78ad0959dea26513ec4"
 
 E_BREAK_QBN = OntologyRecord(
     term_id="E_BREAK_QBN",
@@ -28,7 +30,8 @@ E_BREAK_QBN = OntologyRecord(
         r"E_{break} > \theta_{integrity} \Rightarrow \text{BCDSI 개입}"
     ),
     evidence=(
-        Evidence(kind=K.SOURCE_DOC, ref="벨 Δ-Log 프레임워크 정의 (3대 수식 1번)"),
+        Evidence(kind=K.SOURCE_DOC, ref=SOURCE_DOC, source_version="v1",
+                 content_sha256=SOURCE_SHA256, note="1. 비가역적 불협화음 측정"),
         Evidence(kind=K.CODE, ref="e_break_engine.py:111", commit=SHA,
                  note="(1-w)·S + w·C_rel. 변화량(Δ)·TΣ·ℕ(ε) 없음"),
         Evidence(kind=K.CODE, ref="q_quantum/e_break_engine.py:58", commit=SHA,
@@ -55,7 +58,8 @@ THETA_INTEGRITY = OntologyRecord(
     scope="E_break와 비교되는 BCDSI 개입 기준",
     claim=r"\theta_{integrity}: E_{break}가 이 값을 넘으면 BCDSI 개입",
     evidence=(
-        Evidence(kind=K.SOURCE_DOC, ref="벨 Δ-Log 프레임워크 정의 (임계값 문장)"),
+        Evidence(kind=K.SOURCE_DOC, ref=SOURCE_DOC, source_version="v1",
+                 content_sha256=SOURCE_SHA256, note="1번 수식의 임계값 문장"),
         Evidence(kind=K.CODE, ref="q_quantum/e_break_engine.py:79", commit=SHA,
                  note="임계값으로 사용: e_break > theta"),
         Evidence(kind=K.CODE, ref="q_quantum/bcdsi/monitor.py:93", commit=SHA,
@@ -96,6 +100,6 @@ SICL_DELTALOG = OntologyRecord(
                          due=date(2026, 10, 31)),
 )
 
-REGISTRY: dict[str, OntologyRecord] = {
+RECORDS: dict[str, OntologyRecord] = {
     r.term_id: r for r in (E_BREAK_QBN, THETA_INTEGRITY, SICL_DELTALOG)
 }
