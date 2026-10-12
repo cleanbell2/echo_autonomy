@@ -38,19 +38,28 @@ class SICLStateMachine:
         self.state = SICLState.ASSESS
         dlog = self.dlog_calc.compute(world_state)
         self.last_dlog = dlog
-        mode = self.gate.gate(dlog, type('obj', (object,), {'task_id':'dummy','type':'READ_ONLY_QUERY','e_est':0.0})).mode
+        mode = self.gate.decide_mode(dlog)
         self.metrics.record_tick(mode)
 
         # 2. PLAN (Stasis Break Check)
         stasis_break = (self.metrics.ticks >= 8 and self.metrics.S_stasis >= 0.7)
         self.state = SICLState.PLAN
         tasks = self.planner.propose(dlog, world_state.observations, stasis_break)
+        prepare_tasks = getattr(self.gate, "prepare_tasks", None)
+        if callable(prepare_tasks):
+            prepare_tasks(tasks, world_state)
 
         # 3. GATE (Candidate Rotation)
         self.state = SICLState.GATE
         chosen = None
         for cand in tasks:
             dec = self.gate.gate(dlog, cand, human_approved)
+            decision_record = getattr(self.gate, "decision_record", None)
+            if callable(decision_record):
+                self.ledger.append("ontology_decision", {
+                    "t": self.t, "trace_id": trace_id,
+                    **decision_record(cand, dec),
+                }, trace_id)
             if dec.action in ("ALLOW", "RESTRICT_ALLOW"):
                 chosen = (cand, dec)
                 break
