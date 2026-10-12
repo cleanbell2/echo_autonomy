@@ -6,6 +6,7 @@ This is a domain ontology with explicit rules, not an OWL reasoner.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal
 
@@ -118,16 +119,23 @@ class OntologyPolicy:
         *,
         trusted_approval_ids: frozenset[str] = frozenset(),
         approval_principal: str = "cleanbell2",
+        task_digests: Mapping[str, str] | None = None,
     ) -> None:
         self.graph = graph
         self.trusted_approval_ids = frozenset(trusted_approval_ids)
         self.approval_principal = approval_principal
+        self.task_digests = dict(task_digests) if task_digests is not None else None
 
     def evaluate(self, task: Task) -> tuple[RuleFinding, ...]:
         """Return all applicable restrictions in deterministic rule order."""
         graph = self.graph
         if not graph.contains(task.task_id, "Task"):
             return (RuleFinding("O1_UNKNOWN_TASK", "DENY", (task.task_id,)),)
+        if self.task_digests is not None:
+            from .ontology_runtime import task_digest
+
+            if self.task_digests.get(task.task_id) != task_digest(task):
+                return (RuleFinding("O5_TASK_CHANGED", "DENY", (task.task_id,)),)
         findings = []
         evidence = graph.targets(task.task_id, "supported_by")
         if task.type != "READ_ONLY_QUERY" and not evidence:
