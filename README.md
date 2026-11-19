@@ -1,6 +1,6 @@
 # **BCDSI is a reflex, not a command.**
 
-![Tests](https://github.com/cleanbell2/echo_autonomy/actions/workflows/tests.yml/badge.svg)
+![Tests](https://github.com/cleanbell2/echo_autonomy/actions/workflows/main.yml/badge.svg)
 
 **BCDSI (Brain–Computer Divergence Safety Intervention)** is a real-time safety intervention mechanism that autonomously detects and regulates cognitive divergence in AI systems to preserve systemic stability and survival prior to external control.
 
@@ -14,8 +14,7 @@
 > **Beyond Guardrails: A Bio-Mimetic Nervous System for Autonomous AI**
 > *(가드레일을 넘어: 자율 AI를 위한 생체 모방 신경계)*
 
-[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-53%20passed-brightgreen.svg)](https://github.com/cleanbell2/echo_autonomy)
+[![Python 3.10–3.12](https://img.shields.io/badge/python-3.10%E2%80%933.12-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ---
@@ -250,9 +249,11 @@ wscat -c ws://localhost:18789/gateway
 echo_autonomy/
 ├── bcdsi/                   # Core BCDSI module
 │   ├── __init__.py
-│   ├── types.py            # Core data structures
+│   ├── types.py            # Contract: Enum + Record
+│   ├── policy.py           # PolicyResolver: context → policy, policy → parameters
+│   ├── criticality.py      # CriticalityAssessor: metrics → criticality (fail-closed)
+│   ├── threshold.py        # DynamicThreshold: assembles policy + criticality (DI)
 │   ├── intervention.py     # Reflex decision logic
-│   ├── threshold.py        # Dynamic threshold system
 │   ├── monitor.py          # Observability layer
 │   └── ebreak_calculator.py # E-Break calculation
 ├── q_quantum/              # Quantum components
@@ -303,8 +304,8 @@ python -B -m pytest -q
 ### Running Tests
 
 ```bash
-python -m pytest test_bcdsi.py
-# 53 passed, 1 skipped
+python -m pytest
+# 217 passed, 6 skipped, 2 xfailed (gateway + governance; testpaths는 pytest.ini)
 ```
 
 ---
@@ -503,9 +504,9 @@ For more issues, check [GitHub Issues](https://github.com/cleanbell2/echo_autono
 
 ## ✅ Test Status (Release Check)
 
-- **Environment**: Windows + Python 3.13
-- **Command**: `python -B -m pytest -q`
-- **Result**: `53 passed, 1 skipped` (main branch baseline)
+- **CI**: GitHub Actions, Python 3.10 / 3.11 / 3.12 (`.github/workflows/main.yml`)
+- **Command**: `pytest` (수집 대상은 `pytest.ini`의 `testpaths`)
+- **Result**: `217 passed, 6 skipped, 2 xfailed`
 
 > **Note**: Skipped tests are expected when optional components/dependencies are not installed (minimal build).
 
