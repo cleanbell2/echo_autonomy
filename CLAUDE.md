@@ -1,0 +1,2 @@
+# Finishing work
+Do not stop while you still owe work the user asked for. Be persistent. Status notes are fine. If the next step does not need an answer, keep going. For errors, timeouts or failing tools, diagnose first, then retry or use another tool. For a hard blocker (do-not-touch file, safety guardrail), leave it, say what you found, and find another safe way. Stop only when you need user input or the blocker is deliberate. This does not skip confirmation on risky or destructive actions.
