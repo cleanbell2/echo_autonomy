@@ -1,13 +1,27 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Optional
 
+from .criticality import CriticalityAssessor
+from .policy import PolicyResolver
 from .types import PolicyType, SystemCriticality
 
+_DEFAULT_RESOLVER = PolicyResolver()
+_DEFAULT_ASSESSOR = CriticalityAssessor()
+
+
 class DynamicThreshold:
-    def __init__(self, base_threshold: float = 0.1, policy: PolicyType = PolicyType.CONSERVATIVE, min_threshold: float = 0.0, max_threshold: float = 1.0, adaptation_rate: float = 0.1):
+    """정책(PolicyResolver)과 중요도(CriticalityAssessor)를 주입받아 임계값을 조정한다.
+
+    정책별 상수와 중요도 판정 규칙은 각 모듈이 소유하고, 여기서는 조립만 한다.
+    """
+
+    def __init__(self, base_threshold: float = 0.1, policy: PolicyType = PolicyType.CONSERVATIVE, min_threshold: float = 0.0, max_threshold: float = 1.0, adaptation_rate: float = 0.1,
+                 *, policy_resolver: Optional[PolicyResolver] = None,
+                 criticality_assessor: Optional[CriticalityAssessor] = None):
+        self.policy_resolver = policy_resolver or _DEFAULT_RESOLVER
+        self.criticality_assessor = criticality_assessor or _DEFAULT_ASSESSOR
         self.base_threshold = base_threshold
         self.policy = policy
         self.min_threshold = min_threshold
@@ -18,14 +32,7 @@ class DynamicThreshold:
 
     def set_policy(self, policy: PolicyType):
         self.policy = policy
-        if policy == PolicyType.AGGRESSIVE:
-            self.base_threshold = 0.05
-        elif policy == PolicyType.MODERATE:
-            self.base_threshold = 0.1
-        elif policy == PolicyType.CONSERVATIVE:
-            self.base_threshold = 0.15
-        else:
-            self.base_threshold = 0.2
+        self.base_threshold = self.policy_resolver.base_threshold(policy)
         self.current_threshold = self.base_threshold
 
     def update(self, metric_value: float):
@@ -48,7 +55,6 @@ class DynamicThreshold:
         self.threshold_history.append(self.current_threshold)
 
     def get_threshold_statistics(self):
-        import math
         values = self.threshold_history[-20:] if self.threshold_history else [self.current_threshold]
         n = len(values)
         mean = sum(values) / n if n else 0.0
@@ -61,50 +67,22 @@ class DynamicThreshold:
         }
 
     def calculate_theta_integrity(self, e_break_value: float, vn_entropy: float = 0.0, coherence: float = 0.0, non_unitarity: float = 0.0, history: list = None, historical_theta: list = None) -> float:
-        e = float(e_break_value)
-        base = 1.0 / (1.0 + max(0.0, e))
-        if self.policy == PolicyType.CONSERVATIVE:
-            base += 0.05
-        elif self.policy == PolicyType.AGGRESSIVE:
-            base -= 0.07
-        elif self.policy == PolicyType.LENIENT:
-            base -= 0.03
-        elif self.policy == PolicyType.STRICT:
-            base -= 0.01
-        hist = historical_theta if historical_theta is not None else history
-        if hist and len(hist) > 1:
-            slope = (hist[-1] - hist[0]) / max(1, len(hist) - 1)
-            if slope < 0:
-                base -= abs(slope) * 2
-            else:
-                base += 0.5 * slope
-        base -= 0.1 * vn_entropy
-        base -= 0.1 * coherence
-        base -= 0.1 * non_unitarity
-        return max(0.0, base)
+        """θ_integrity — 모듈 함수 calculate_theta_integrity 로 위임 (D4, 단일 정본).
 
-    _CRITICALITY_KEYS = ("error_rate", "latency", "resource_usage")
+        vn_entropy / coherence / non_unitarity 는 하위 호환을 위해 받기만 하고 쓰지 않는다.
+        e_break_value 가 E_break^QBN 합계이면 ΔS·ΔC·ℕ 이 이미 포함돼 있어,
+        여기서 다시 빼면 같은 항을 두 번 반영하게 된다 (2026-10-03, PR #12 D4).
+        수식은 정본 하나이고, 정책 보정값만 주입된 policy_resolver 에서 읽는다.
+        """
+        hist = historical_theta if historical_theta is not None else history
+        return calculate_theta_integrity(
+            e_break_value, policy=self.policy, history=hist,
+            policy_resolver=self.policy_resolver)
 
     def get_system_criticality(self, metrics: dict) -> SystemCriticality:
-        """Fail-closed: 측정 불가(누락/None/NaN)를 '정상'으로 간주하지 않는다.
-        - 측정값 중 하나라도 HIGH 조건 → HIGH
-        - 세 항목 모두 측정 불가 → HIGH
-        - 일부만 측정됨 → LOW 단정 불가, 최소 MEDIUM
-        """
-        vals = {}
-        for k in self._CRITICALITY_KEYS:
-            v = (metrics or {}).get(k)
-            if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
-                vals[k] = float(v)
-        if not vals:
-            return SystemCriticality.HIGH
-        if (vals.get("error_rate", 0.0) > 0.15 or vals.get("latency", 0.0) > 60
-                or vals.get("resource_usage", 0.0) > 0.8):
-            return SystemCriticality.HIGH
-        if (len(vals) == len(self._CRITICALITY_KEYS) and vals["error_rate"] < 0.08
-                and vals["latency"] < 30 and vals["resource_usage"] < 0.5):
-            return SystemCriticality.LOW
-        return SystemCriticality.MEDIUM
+        """Fail-closed 판정은 CriticalityAssessor가 소유한다."""
+        return self.criticality_assessor.assess(metrics)
+
 
 def create_policy_based_threshold(
     base_threshold: float = 0.85,
@@ -127,22 +105,22 @@ def calculate_theta_integrity(
     system_criticality: SystemCriticality = SystemCriticality.MEDIUM,
     min_theta: float = 0.0,
     history: list = None,
+    *,
+    policy_resolver: Optional[PolicyResolver] = None,
 ) -> float:
+    """θ_integrity 정본 (D4): 기본항 1/(1+max(0,E)) + 정책·중요도 보정 + 추세 보정, [min_theta, 1].
+
+    정책별 보정값의 엄격도 순서는 미확정 (PR #12 Bell 댓글) — 기존 값을 그대로 둔다.
+    비유한 E 는 θ=min_theta (fail-closed).
+    policy_resolver 를 주면 정책 보정값을 그 resolver 에서 읽는다 (기본: 모듈 기본 resolver).
+    """
     e = float(e_break_value)
+    if not math.isfinite(e):
+        return float(min_theta)
     base = 1.0 / (1.0 + max(0.0, e))
-    if policy == PolicyType.CONSERVATIVE:
-        base += 0.05
-    elif policy == PolicyType.AGGRESSIVE:
-        base -= 0.07
-    elif policy == PolicyType.LENIENT:
-        base -= 0.03
-    elif policy == PolicyType.STRICT:
-        base -= 0.01
-    if system_criticality == SystemCriticality.HIGH:
-        base -= 0.02
-    elif system_criticality == SystemCriticality.LOW:
-        base += 0.02
+    base += (policy_resolver or _DEFAULT_RESOLVER).theta_offset(policy)
+    base += CriticalityAssessor.theta_offset(system_criticality)
     if history and len(history) > 2:
         slope = (history[-1] - history[0]) / max(1, len(history) - 1)
         base += 0.5 * slope
-    return max(min_theta, base)
+    return min(1.0, max(float(min_theta), base))
