@@ -61,27 +61,14 @@ class DynamicThreshold:
         }
 
     def calculate_theta_integrity(self, e_break_value: float, vn_entropy: float = 0.0, coherence: float = 0.0, non_unitarity: float = 0.0, history: list = None, historical_theta: list = None) -> float:
-        e = float(e_break_value)
-        base = 1.0 / (1.0 + max(0.0, e))
-        if self.policy == PolicyType.CONSERVATIVE:
-            base += 0.05
-        elif self.policy == PolicyType.AGGRESSIVE:
-            base -= 0.07
-        elif self.policy == PolicyType.LENIENT:
-            base -= 0.03
-        elif self.policy == PolicyType.STRICT:
-            base -= 0.01
+        """θ_integrity — 모듈 함수 calculate_theta_integrity 로 위임 (D4, 단일 정본).
+
+        vn_entropy / coherence / non_unitarity 는 하위 호환을 위해 받기만 하고 쓰지 않는다.
+        e_break_value 가 E_break^QBN 합계이면 ΔS·ΔC·ℕ 이 이미 포함돼 있어,
+        여기서 다시 빼면 같은 항을 두 번 반영하게 된다 (2026-10-03, PR #12 D4).
+        """
         hist = historical_theta if historical_theta is not None else history
-        if hist and len(hist) > 1:
-            slope = (hist[-1] - hist[0]) / max(1, len(hist) - 1)
-            if slope < 0:
-                base -= abs(slope) * 2
-            else:
-                base += 0.5 * slope
-        base -= 0.1 * vn_entropy
-        base -= 0.1 * coherence
-        base -= 0.1 * non_unitarity
-        return max(0.0, base)
+        return calculate_theta_integrity(e_break_value, policy=self.policy, history=hist)
 
     _CRITICALITY_KEYS = ("error_rate", "latency", "resource_usage")
 
@@ -128,7 +115,14 @@ def calculate_theta_integrity(
     min_theta: float = 0.0,
     history: list = None,
 ) -> float:
+    """θ_integrity 정본 (D4): 기본항 1/(1+max(0,E)) + 정책·중요도 보정 + 추세 보정, [min_theta, 1].
+
+    정책별 보정값의 엄격도 순서는 미확정 (PR #12 Bell 댓글) — 기존 값을 그대로 둔다.
+    비유한 E 는 θ=min_theta (fail-closed).
+    """
     e = float(e_break_value)
+    if not math.isfinite(e):
+        return float(min_theta)
     base = 1.0 / (1.0 + max(0.0, e))
     if policy == PolicyType.CONSERVATIVE:
         base += 0.05
@@ -145,4 +139,4 @@ def calculate_theta_integrity(
     if history and len(history) > 2:
         slope = (history[-1] - history[0]) / max(1, len(history) - 1)
         base += 0.5 * slope
-    return max(min_theta, base)
+    return min(1.0, max(float(min_theta), base))
