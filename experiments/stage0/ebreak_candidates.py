@@ -34,22 +34,52 @@ import numpy as np
 _EPS = 1e-12
 
 
+# ---------------------------------------------------------------- 입력 계약
+def _real_array(x, name: str) -> np.ndarray:
+    """실수 입력 계약: 유한한 float64 사본을 돌려준다.
+
+    확률·임베딩·앵커는 실수만 받는다 (D1: |e_i⟩ ∈ R^d). 복소 dtype 은 허수부가 0 이어도 거부한다.
+    예전에는 허수부가 경고만 내고 버려져 틀린 값이 조용히 나왔다.
+    """
+    a = np.asarray(x)
+    if np.iscomplexobj(a):
+        raise ValueError(f"{name} 는 실수여야 함 (복소 입력 미지원)")
+    try:
+        a = np.array(a, dtype=float)        # 항상 새 사본
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} 를 실수 배열로 바꿀 수 없음") from exc
+    if not np.all(np.isfinite(a)):
+        raise ValueError(f"{name} 에 비유한 값")
+    return a
+
+
+def _frozen(a: np.ndarray) -> np.ndarray:
+    """불변 bytes 버퍼 위의 배열. 쓰기 불가이고 setflags(write=True) 로도 되돌릴 수 없다."""
+    return np.frombuffer(a.tobytes(), dtype=a.dtype).reshape(a.shape)
+
+
 # ---------------------------------------------------------------- 상태 구성
 @dataclass(frozen=True)
 class AgentStep:
-    """한 스텝의 관측. probs 는 합 1, embeddings 는 (K, d)."""
+    """한 스텝의 관측. probs 는 합 1, embeddings 는 (K, d).
+
+    검증한 값을 읽기 전용 float64 사본으로 보관한다. 생성 뒤에 호출자가 원본 배열을 바꿔도
+    이 스텝은 달라지지 않고, 보관된 배열도 고칠 수 없다.
+    """
     probs: np.ndarray
     embeddings: np.ndarray
 
     def __post_init__(self):
-        p = np.asarray(self.probs, dtype=float)
-        e = np.asarray(self.embeddings, dtype=float)
+        p = _real_array(self.probs, "probs")
+        e = _real_array(self.embeddings, "embeddings")
         if p.ndim != 1 or e.ndim != 2 or len(p) != e.shape[0]:
             raise ValueError("probs (K,) 와 embeddings (K,d) 크기 불일치")
         if np.any(p < -_EPS) or not math.isclose(float(p.sum()), 1.0, abs_tol=1e-9):
             raise ValueError("probs 는 음수가 없고 합이 1 이어야 함")
-        if not np.all(np.isfinite(e)) or np.any(np.linalg.norm(e, axis=1) < _EPS):
+        if np.any(np.linalg.norm(e, axis=1) < _EPS):
             raise ValueError("embeddings 에 0 벡터 또는 비유한 값")
+        object.__setattr__(self, "probs", _frozen(p))
+        object.__setattr__(self, "embeddings", _frozen(e))
 
 
 def _unit(e: np.ndarray) -> np.ndarray:
@@ -92,34 +122,76 @@ def von_neumann_entropy(rho: np.ndarray) -> float:
     return float(-(lam * np.log(lam)).sum())
 
 
-def orthonormal_basis(anchors: np.ndarray, dim: int) -> np.ndarray:
-    """앵커 벡터를 Gram-Schmidt 로 정규직교화하고 나머지를 보완해 완전 기저(dim×dim)를 만든다.
-    앞쪽 열이 앵커 방향. 앵커가 선형종속이면 ValueError."""
-    a = np.asarray(anchors, float)
+def _anchor_matrix(anchors, dim: int) -> np.ndarray:
+    """앵커 입력 계약: (m, dim) 실수·유한, 1 ≤ m ≤ dim, 영벡터 없음.
+
+    m > dim 이면 반드시 선형종속이다. 예전에는 QR 대각 성분을 dim 개만 봐서 이 경우가 통과했다.
+    거의 겹치는 앵커와 m = dim (P_A = I) 의 처리 기준은 정해지지 않았다. 여기서는 기존 판정을
+    바꾸지 않는다 (docs/experiments/stage0_anchor_criteria_proposal.md).
+    """
+    a = _real_array(anchors, "anchors")
     if a.ndim != 2 or a.shape[1] != dim:
         raise ValueError("anchors 는 (m, dim)")
+    if a.shape[0] == 0:
+        raise ValueError("anchors 가 비어 있음")
+    if np.any(np.linalg.norm(a, axis=1) == 0.0):
+        raise ValueError("anchors 에 0 벡터")
+    if a.shape[0] > dim:
+        raise ValueError("앵커가 선형종속")
+    return a
+
+
+def _anchor_qr(anchors, dim: int) -> np.ndarray:
+    """앵커 부분공간의 정규직교 기저 (dim×m). 선형종속 판정은 기존 기준 그대로다."""
+    a = _anchor_matrix(anchors, dim)
     q, r = np.linalg.qr(a.T)
     if np.any(np.abs(np.diag(r)) < 1e-9):
         raise ValueError("앵커가 선형종속")
+    return q
+
+
+def orthonormal_basis(anchors: np.ndarray, dim: int) -> np.ndarray:
+    """앵커 벡터를 Gram-Schmidt 로 정규직교화하고 나머지를 보완해 완전 기저(dim×dim)를 만든다.
+    앞쪽 열이 앵커 방향. 앵커가 선형종속이면 ValueError."""
+    q = _anchor_qr(anchors, dim)
     full, _ = np.linalg.qr(np.hstack([q, np.eye(dim)]))   # 앞 m 열 = ±앵커 방향
     return full
 
 
+def _unitary_basis(basis, dim: int) -> np.ndarray:
+    """기준 기저 계약: dim×dim 유니터리 (B†B = I). 실수 직교행렬을 포함한다."""
+    b = np.asarray(basis)
+    try:
+        b = np.array(b, dtype=complex if np.iscomplexobj(b) else float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("basis 를 수치 배열로 바꿀 수 없음") from exc
+    if b.ndim != 2 or b.shape != (dim, dim):
+        raise ValueError("basis 는 (dim, dim) 정사각 기저")
+    if not np.all(np.isfinite(b)):
+        raise ValueError("basis 에 비유한 값")
+    if not np.allclose(b.conj().T @ b, np.eye(dim), atol=1e-9):
+        raise ValueError("basis 는 정규직교(유니터리)여야 함")
+    return b
+
+
 def coherence_rel_entropy(rho: np.ndarray, basis: Optional[np.ndarray] = None) -> float:
-    """C_rel(ρ) = S(Δ_B(ρ)) − S(ρ). basis 열벡터가 기준 기저(None 이면 계산 기저)."""
+    """C_rel(ρ) = S(Δ_B(ρ)) − S(ρ). basis 열벡터가 기준 기저(None 이면 계산 기저).
+
+    basis 는 유니터리여야 하고 B†ρB 로 옮긴다. 예전에는 검사 없이 B^T ρ B 를 써서,
+    정규직교가 아닌 기저에서 의미 없는 값이 조용히 나왔고 복소 기저는 틀리게 처리됐다.
+    """
     _check_density(rho)
-    r = rho if basis is None else basis.T @ rho @ basis
+    if basis is None:
+        r = rho
+    else:
+        b = _unitary_basis(basis, rho.shape[0])
+        r = b.conj().T @ rho @ b
     dephased = np.diag(np.diag(r).real)
     return von_neumann_entropy(dephased) - von_neumann_entropy(r)
 
 
 def _anchor_projector(anchors: np.ndarray, dim: int) -> np.ndarray:
-    a = np.asarray(anchors, float)
-    if a.ndim != 2 or a.shape[1] != dim:
-        raise ValueError("anchors 는 (m, dim)")
-    q, r = np.linalg.qr(a.T)
-    if np.any(np.abs(np.diag(r)) < 1e-9):
-        raise ValueError("앵커가 선형종속")
+    q = _anchor_qr(anchors, dim)
     return q @ q.T
 
 
