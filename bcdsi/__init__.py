@@ -7,6 +7,8 @@ Monitors and intervenes in quantum systems to detect and counteract BCDSI interf
 from .intervention import intervene, InterventionLevel, InterventionRecord
 from .threshold import calculate_theta_integrity, DynamicThreshold
 from .monitor import EBreakMonitor
+from .policy import PolicyResolver
+from .criticality import CriticalityAssessor
 
 __version__ = "1.0.0"
 __all__ = [
@@ -15,5 +17,7 @@ __all__ = [
     'InterventionRecord',
     'calculate_theta_integrity',
     'DynamicThreshold',
-    'EBreakMonitor'
+    'EBreakMonitor',
+    'PolicyResolver',
+    'CriticalityAssessor',
 ]
