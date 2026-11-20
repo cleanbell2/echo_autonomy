@@ -1,6 +1,6 @@
 # Stage 0 — E_break^QBN 운영 정의
 
-상태: **D1–D6 채택 (Bell, [PR #12 댓글](https://github.com/cleanbell2/echo_autonomy/pull/12#issuecomment-5965967005), 2026-10-03)** · 정책 엄격도 순서 미확정 · 참조 구현: `experiments/stage0/` · 검증: `tests/stage0/` (25 passed)
+상태: **D1–D6 채택 (Bell, [PR #12 댓글](https://github.com/cleanbell2/echo_autonomy/pull/12#issuecomment-5965967005), 2026-10-03)** · 정책 엄격도 순서 미확정 · 참조 구현: `experiments/stage0/` · 검증: `tests/stage0/` (50 passed, 2 xfailed)
 
 ## 0. 왜 필요한가
 
@@ -104,6 +104,7 @@ $$
 | $\theta_{min}$, $Q_{min}$ | 실험 1 사전 등록 시 결정 |
 | 앵커 문장 목록 | 실험 1 설계 시 결정 |
 | cost/progress 측정법과 정규화 | 실험 1 설계 시 결정 |
+| 앵커 입력 기준 (거의 겹치는 앵커, 전체 공간을 채우는 앵커) | 미확정 — 제안: [stage0_anchor_criteria_proposal.md](stage0_anchor_criteria_proposal.md), `tests/stage0/test_input_contract.py` xfail 2건 |
 
 ## 6. 실험 1
 
