@@ -305,7 +305,7 @@ python -B -m pytest -q
 
 ```bash
 python -m pytest
-# 323 passed, 6 skipped, 1 xfailed (gateway + governance + ontology + stage0; testpaths는 pytest.ini)
+# 345 passed, 6 skipped, 3 xfailed (gateway + governance + ontology + stage0; testpaths는 pytest.ini)
 ```
 
 ---
@@ -506,7 +506,7 @@ For more issues, check [GitHub Issues](https://github.com/cleanbell2/echo_autono
 
 - **CI**: GitHub Actions, Python 3.10 / 3.11 / 3.12 (`.github/workflows/main.yml`)
 - **Command**: `pytest` (수집 대상은 `pytest.ini`의 `testpaths`)
-- **Result**: `323 passed, 6 skipped, 1 xfailed`
+- **Result**: `345 passed, 6 skipped, 3 xfailed`
 
 > **Note**: Skipped tests are expected when optional components/dependencies are not installed (minimal build).
 
